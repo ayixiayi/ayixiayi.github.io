@@ -1,0 +1,27 @@
+backend:
+  name: github
+  repo: ayixiayi/ayixiayi.github.io
+  branch: main
+  base_url: https://decap-oauth.ayixiayi.workers.dev
+  auth_endpoint: /auth
+
+media_folder: "public/images/uploads"
+public_folder: "/images/uploads"
+
+locale: "zh_Hans"
+
+collections:
+  - name: "blog"
+    label: "博客文章"
+    folder: "src/content/blog"
+    create: true
+    slug: "{{slug}}"
+    editor:
+      preview: false
+    fields:
+      - { label: "标题", name: "title", widget: "string" }
+      - { label: "描述", name: "description", widget: "text" }
+      - { label: "发布日期", name: "pubDate", widget: "datetime", date_format: "YYYY-MM-DD", time_format: false, format: "YYYY-MM-DD", picker_utc: true }
+      - { label: "标签", name: "tags", widget: "list", default: [], allow_add: true }
+      - { label: "草稿", name: "draft", widget: "boolean", default: false, required: false }
+      - { label: "正文", name: "body", widget: "markdown" }
