@@ -3,25 +3,25 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 
 const projects = [
   {
-    title: 'Project One',
-    description: 'A brief description of what this project does and why it matters.',
-    tags: ['TypeScript', 'React'],
-    url: 'https://github.com/ayixiayi/project-one',
+    title: 'MusicBarOs',
+    description: 'SJTU 工程学导论课项目，还原前流媒体时代的音乐播放体验。',
+    tags: ['JavaScript'],
+    url: 'https://github.com/ayixiayi/MusicBarOs',
   },
   {
-    title: 'Project Two',
-    description: 'Another project with a different tech stack and purpose.',
-    tags: ['Python', 'FastAPI'],
-    url: 'https://github.com/ayixiayi/project-two',
+    title: 'github-picks-skill',
+    description: 'AI agent skill：每日 GitHub 开源项目精选推荐，具备偏好学习能力。',
+    tags: ['Python', 'AI Agent'],
+    url: 'https://github.com/ayixiayi/github-picks-skill',
   },
 ];
 ---
 
-<BaseLayout title="Projects - ayixiayi" description="My projects and work">
+<BaseLayout title="项目 - ayixiayi" description="我的项目">
   <main class="container">
     <div class="page-header">
-      <h1>Projects</h1>
-      <p>Things I've built and contributed to.</p>
+      <h1>项目</h1>
+      <p>做过的和在做的东西。</p>
     </div>
     <div class="card-grid">
       {projects.map((project) => (

@@ -11,11 +11,11 @@ function formatDate(date: Date): string {
 }
 ---
 
-<BaseLayout title="Blog - ayixiayi" description="Thoughts and notes">
+<BaseLayout title="博客 - ayixiayi" description="随笔与记录">
   <main class="container">
     <div class="page-header">
-      <h1>Blog</h1>
-      <p>Writing about things I learn and think about.</p>
+      <h1>博客</h1>
+      <p>学到的和想到的。</p>
     </div>
     <div class="post-list">
       {posts.map((post) => (
@@ -24,7 +24,7 @@ function formatDate(date: Date): string {
           <span class="post-date">{formatDate(post.data.pubDate)}</span>
         </div>
       ))}
-      {posts.length === 0 && <p style="color: var(--text-muted);">No posts yet. Stay tuned.</p>}
+      {posts.length === 0 && <p style="color: var(--text-muted);">还没有文章，敬请期待。</p>}
     </div>
   </main>
 </BaseLayout>

@@ -14,7 +14,7 @@ const { post } = Astro.props;
 const { Content } = await render(post);
 
 function formatDate(date: Date): string {
-  return date.toLocaleDateString('en-US', {
+  return date.toLocaleDateString('zh-CN', {
     year: 'numeric',
     month: 'long',
     day: 'numeric',
@@ -34,7 +34,7 @@ function formatDate(date: Date): string {
       <Content />
     </article>
     <div style="margin-top: 3em; padding-top: 2em; border-top: 1px solid var(--border);">
-      <a href="/blog">← Back to all posts</a>
+      <a href="/blog">← 返回博客列表</a>
     </div>
   </main>
 </BaseLayout>
