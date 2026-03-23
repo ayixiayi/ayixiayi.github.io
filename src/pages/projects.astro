@@ -1,0 +1,40 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+
+const projects = [
+  {
+    title: 'Project One',
+    description: 'A brief description of what this project does and why it matters.',
+    tags: ['TypeScript', 'React'],
+    url: 'https://github.com/yourusername/project-one',
+  },
+  {
+    title: 'Project Two',
+    description: 'Another project with a different tech stack and purpose.',
+    tags: ['Python', 'FastAPI'],
+    url: 'https://github.com/yourusername/project-two',
+  },
+];
+---
+
+<BaseLayout title="Projects - YourName" description="My projects and work">
+  <main class="container">
+    <div class="page-header">
+      <h1>Projects</h1>
+      <p>Things I've built and contributed to.</p>
+    </div>
+    <div class="card-grid">
+      {projects.map((project) => (
+        <a href={project.url} target="_blank" rel="noopener" class="card">
+          <h3>{project.title}</h3>
+          <p>{project.description}</p>
+          <div class="card-meta">
+            {project.tags.map((tag) => (
+              <span class="tag">{tag}</span>
+            ))}
+          </div>
+        </a>
+      ))}
+    </div>
+  </main>
+</BaseLayout>

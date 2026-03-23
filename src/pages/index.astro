@@ -1,0 +1,99 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import GenerativeBackground from '../components/GenerativeBackground.astro';
+---
+
+<BaseLayout title="YourName" description="Personal website">
+  <GenerativeBackground />
+  <main class="hero">
+    <div class="hero-content">
+      <h1>Hi, I'm <span class="accent">YourName</span></h1>
+      <p class="hero-subtitle">Developer · Creator · Explorer</p>
+      <p class="hero-desc">
+        Building things for the web. Welcome to my corner of the internet.
+      </p>
+      <div class="hero-links">
+        <a href="https://github.com/yourusername" target="_blank" rel="noopener" class="hero-link">GitHub</a>
+        <a href="/projects" class="hero-link">Projects →</a>
+        <a href="/blog" class="hero-link">Blog →</a>
+      </div>
+    </div>
+  </main>
+</BaseLayout>
+
+<style>
+  .hero {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+  }
+
+  .hero-content {
+    text-align: center;
+    padding: 32px;
+    max-width: 600px;
+  }
+
+  .hero-content h1 {
+    font-size: 48px;
+    font-weight: 700;
+    letter-spacing: -0.04em;
+    margin-bottom: 12px;
+    color: #e8e6dc;
+  }
+
+  .accent {
+    color: #d97757;
+  }
+
+  .hero-subtitle {
+    font-size: 18px;
+    color: #8a8880;
+    margin-bottom: 20px;
+    letter-spacing: 0.05em;
+  }
+
+  .hero-desc {
+    font-size: 16px;
+    color: #b0aea5;
+    margin-bottom: 32px;
+    line-height: 1.6;
+  }
+
+  .hero-links {
+    display: flex;
+    gap: 16px;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .hero-link {
+    padding: 10px 24px;
+    border: 1px solid #2a2a30;
+    border-radius: 8px;
+    color: #e8e6dc;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.2s;
+    background: rgba(20, 20, 24, 0.6);
+    backdrop-filter: blur(8px);
+  }
+
+  .hero-link:hover {
+    border-color: #d97757;
+    color: #d97757;
+    transform: translateY(-1px);
+  }
+
+  @media (max-width: 640px) {
+    .hero-content h1 {
+      font-size: 32px;
+    }
+
+    .hero-subtitle {
+      font-size: 15px;
+    }
+  }
+</style>

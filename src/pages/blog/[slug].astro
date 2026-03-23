@@ -1,0 +1,40 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { getCollection, render } from 'astro:content';
+
+export async function getStaticPaths() {
+  const posts = await getCollection('blog');
+  return posts.map((post) => ({
+    params: { slug: post.id },
+    props: { post },
+  }));
+}
+
+const { post } = Astro.props;
+const { Content } = await render(post);
+
+function formatDate(date: Date): string {
+  return date.toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  });
+}
+---
+
+<BaseLayout title={`${post.data.title} - YourName`} description={post.data.description}>
+  <main class="container">
+    <article class="prose">
+      <header style="margin-bottom: 2em;">
+        <h1 style="margin-top: 0;">{post.data.title}</h1>
+        <time style="color: var(--text-muted); font-size: 14px; font-family: var(--font-mono);">
+          {formatDate(post.data.pubDate)}
+        </time>
+      </header>
+      <Content />
+    </article>
+    <div style="margin-top: 3em; padding-top: 2em; border-top: 1px solid var(--border);">
+      <a href="/blog">← Back to all posts</a>
+    </div>
+  </main>
+</BaseLayout>
