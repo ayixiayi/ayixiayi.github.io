@@ -1,200 +1,156 @@
 ---
 ---
 
-<canvas id="generative-bg"></canvas>
+<div id="generative-bg"></div>
 
-<script>
-  const canvas = document.getElementById('generative-bg') as HTMLCanvasElement;
-  const ctx = canvas.getContext('2d')!;
+<script is:inline src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.7.0/p5.min.js"></script>
+<script is:inline>
+  // Luminous Erosion — full-fidelity p5.js background
+  // Random seed on every page load, no controls exposed
 
-  const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const isMobile = window.innerWidth < 768;
+  (function () {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
 
-  // Inline simplex noise (avoid loading full module for background effect)
-  // Based on simplex-noise.js by Jonas Wagner — MIT License
-  const F2 = 0.5 * (Math.sqrt(3) - 1);
-  const G2 = (3 - Math.sqrt(3)) / 6;
-  const grad3 = [
-    [1,1],[- 1,1],[1,-1],[-1,-1],
-    [1,0],[-1,0],[0,1],[0,-1],
-    [1,1],[-1,1],[1,-1],[-1,-1]
-  ];
+    var isMobile = window.innerWidth < 768;
+    var PARTICLE_COUNT = isMobile ? 1500 : 4000;
 
-  let perm: number[] = [];
-  let permMod12: number[] = [];
+    var params = {
+      seed: Math.floor(Math.random() * 999999) + 1,
+      noiseScale: 0.004,
+      flowForce: 1.0,
+      erosionRate: isMobile ? 12 : 8,
+      maxSpeed: 3.5,
+      trailOpacity: 20,
+      colorSlow: [217, 119, 87],
+      colorMid: [232, 220, 200],
+      colorFast: [106, 155, 204]
+    };
 
-  function seedNoise(seed: number) {
-    const p = new Array(256);
-    let v: number;
-    let s = seed;
-    for (let i = 0; i < 256; i++) {
-      s = (s * 16807 + 0) % 2147483647;
-      p[i] = s % 256;
-    }
-    perm = new Array(512);
-    permMod12 = new Array(512);
-    for (let i = 0; i < 512; i++) {
-      perm[i] = p[i & 255];
-      permMod12[i] = perm[i] % 12;
-    }
-  }
+    var particles = [];
+    var noiseZOffset = 0;
 
-  function noise2D(xin: number, yin: number): number {
-    const s = (xin + yin) * F2;
-    const i = Math.floor(xin + s);
-    const j = Math.floor(yin + s);
-    const t = (i + j) * G2;
-    const X0 = i - t;
-    const Y0 = j - t;
-    const x0 = xin - X0;
-    const y0 = yin - Y0;
-    const i1 = x0 > y0 ? 1 : 0;
-    const j1 = x0 > y0 ? 0 : 1;
-    const x1 = x0 - i1 + G2;
-    const y1 = y0 - j1 + G2;
-    const x2 = x0 - 1.0 + 2.0 * G2;
-    const y2 = y0 - 1.0 + 2.0 * G2;
-    const ii = i & 255;
-    const jj = j & 255;
-    let n0 = 0, n1 = 0, n2 = 0;
-    let t0 = 0.5 - x0 * x0 - y0 * y0;
-    if (t0 >= 0) {
-      const gi0 = permMod12[ii + perm[jj]];
-      t0 *= t0;
-      n0 = t0 * t0 * (grad3[gi0][0] * x0 + grad3[gi0][1] * y0);
-    }
-    let t1 = 0.5 - x1 * x1 - y1 * y1;
-    if (t1 >= 0) {
-      const gi1 = permMod12[ii + i1 + perm[jj + j1]];
-      t1 *= t1;
-      n1 = t1 * t1 * (grad3[gi1][0] * x1 + grad3[gi1][1] * y1);
-    }
-    let t2 = 0.5 - x2 * x2 - y2 * y2;
-    if (t2 >= 0) {
-      const gi2 = permMod12[ii + 1 + perm[jj + 1]];
-      t2 *= t2;
-      n2 = t2 * t2 * (grad3[gi2][0] * x2 + grad3[gi2][1] * y2);
-    }
-    return 70.0 * (n0 + n1 + n2);
-  }
+    new p5(function (p) {
+      p.setup = function () {
+        var canvas = p.createCanvas(p.windowWidth, p.windowHeight);
+        canvas.parent('generative-bg');
+        p.colorMode(p.RGB, 255, 255, 255, 255);
+        p.pixelDensity(Math.min(window.devicePixelRatio || 1, 2));
+        initializeSystem(p);
+      };
 
-  // Configuration
-  const PARTICLE_COUNT = isMobile ? 600 : 3000;
-  const NOISE_SCALE = 0.004;
-  const FLOW_FORCE = 0.15;
-  const MAX_SPEED = 3.5;
-  const EROSION_ALPHA = isMobile ? 12 : 8;
-  const TRAIL_ALPHA = 20;
+      p.windowResized = function () {
+        p.resizeCanvas(p.windowWidth, p.windowHeight);
+        initializeSystem(p);
+      };
 
-  const COLOR_SLOW = [217, 119, 87];
-  const COLOR_MID = [232, 220, 200];
-  const COLOR_FAST = [106, 155, 204];
+      p.draw = function () {
+        // Erosion veil — darkness slowly reclaims
+        p.noStroke();
+        p.fill(10, 10, 12, params.erosionRate);
+        p.rect(0, 0, p.width, p.height);
 
-  let noiseZ = 0;
-  let particles: { x: number; y: number; px: number; py: number; vx: number; vy: number }[] = [];
-  let w = 0;
-  let h = 0;
+        // Advance noise field slowly for subtle temporal drift
+        noiseZOffset += 0.0003;
 
-  function resize() {
-    const dpr = Math.min(window.devicePixelRatio || 1, 2);
-    w = window.innerWidth;
-    h = window.innerHeight;
-    canvas.width = w * dpr;
-    canvas.height = h * dpr;
-    canvas.style.width = w + 'px';
-    canvas.style.height = h + 'px';
-    ctx.scale(dpr, dpr);
-    ctx.fillStyle = 'rgb(10,10,12)';
-    ctx.fillRect(0, 0, w, h);
-  }
-
-  function init() {
-    seedNoise(42);
-    resize();
-    particles = [];
-    for (let i = 0; i < PARTICLE_COUNT; i++) {
-      particles.push({
-        x: Math.random() * w,
-        y: Math.random() * h,
-        px: 0, py: 0, vx: 0, vy: 0
-      });
-    }
-    for (let i = 0; i < particles.length; i++) {
-      particles[i].px = particles[i].x;
-      particles[i].py = particles[i].y;
-    }
-  }
-
-  function lerp(a: number, b: number, t: number) {
-    return a + (b - a) * t;
-  }
-
-  function frame() {
-    ctx.fillStyle = `rgba(10,10,12,${EROSION_ALPHA / 255})`;
-    ctx.fillRect(0, 0, w, h);
-    noiseZ += 0.0003;
-
-    for (let i = 0; i < particles.length; i++) {
-      const p = particles[i];
-      p.px = p.x;
-      p.py = p.y;
-
-      const nx = p.x * NOISE_SCALE;
-      const ny = p.y * NOISE_SCALE;
-      const angle = noise2D(nx, ny + noiseZ) * Math.PI * 4;
-
-      p.vx += Math.cos(angle) * FLOW_FORCE;
-      p.vy += Math.sin(angle) * FLOW_FORCE;
-
-      const speed = Math.sqrt(p.vx * p.vx + p.vy * p.vy);
-      if (speed > MAX_SPEED) {
-        p.vx = (p.vx / speed) * MAX_SPEED;
-        p.vy = (p.vy / speed) * MAX_SPEED;
-      }
-
-      p.x += p.vx;
-      p.y += p.vy;
-
-      let wrapped = false;
-      if (p.x < 0) { p.x = w; wrapped = true; }
-      if (p.x > w) { p.x = 0; wrapped = true; }
-      if (p.y < 0) { p.y = h; wrapped = true; }
-      if (p.y > h) { p.y = 0; wrapped = true; }
-      if (wrapped) { p.px = p.x; p.py = p.y; }
-
-      const sn = Math.min(speed / MAX_SPEED, 1);
-      let r: number, g: number, b: number;
-      if (sn < 0.5) {
-        const t = sn * 2;
-        r = lerp(COLOR_SLOW[0], COLOR_MID[0], t);
-        g = lerp(COLOR_SLOW[1], COLOR_MID[1], t);
-        b = lerp(COLOR_SLOW[2], COLOR_MID[2], t);
-      } else {
-        const t = (sn - 0.5) * 2;
-        r = lerp(COLOR_MID[0], COLOR_FAST[0], t);
-        g = lerp(COLOR_MID[1], COLOR_FAST[1], t);
-        b = lerp(COLOR_MID[2], COLOR_FAST[2], t);
-      }
-
-      const alpha = (TRAIL_ALPHA * (0.4 + sn * 0.6)) / 255;
-      ctx.strokeStyle = `rgba(${r|0},${g|0},${b|0},${alpha})`;
-      ctx.lineWidth = sn < 0.3 ? 1.5 : 1;
-      ctx.beginPath();
-      ctx.moveTo(p.px, p.py);
-      ctx.lineTo(p.x, p.y);
-      ctx.stroke();
-    }
-
-    requestAnimationFrame(frame);
-  }
-
-  if (!prefersReducedMotion) {
-    init();
-    window.addEventListener('resize', () => {
-      init();
+        for (var i = 0; i < particles.length; i++) {
+          var pt = particles[i];
+          follow(p, pt);
+          update(pt);
+          display(p, pt);
+          edges(p, pt);
+        }
+      };
     });
-    requestAnimationFrame(frame);
-  }
+
+    function initializeSystem(p) {
+      p.randomSeed(params.seed);
+      p.noiseSeed(params.seed);
+      noiseZOffset = 0;
+
+      particles = [];
+      for (var i = 0; i < PARTICLE_COUNT; i++) {
+        particles.push({
+          x: p.random(p.width),
+          y: p.random(p.height),
+          px: 0, py: 0,
+          vx: 0, vy: 0,
+          maxSpeed: params.maxSpeed
+        });
+      }
+      for (var j = 0; j < particles.length; j++) {
+        particles[j].px = particles[j].x;
+        particles[j].py = particles[j].y;
+      }
+
+      p.background(10, 10, 12);
+    }
+
+    function follow(p, pt) {
+      var x = pt.x * params.noiseScale;
+      var y = pt.y * params.noiseScale;
+
+      // Multi-octave noise for richer flow topology (matches original art.html)
+      var angle1 = p.noise(x, y, noiseZOffset) * p.TWO_PI * 2;
+      var angle2 = p.noise(x * 2.3 + 100, y * 2.3 + 100, noiseZOffset * 0.7) * p.TWO_PI;
+      var blended = angle1 * 0.7 + angle2 * 0.3;
+
+      var forceMag = params.flowForce * 0.15;
+      pt.vx += Math.cos(blended) * forceMag;
+      pt.vy += Math.sin(blended) * forceMag;
+    }
+
+    function update(pt) {
+      pt.px = pt.x;
+      pt.py = pt.y;
+      var speed = Math.sqrt(pt.vx * pt.vx + pt.vy * pt.vy);
+      if (speed > pt.maxSpeed) {
+        pt.vx = (pt.vx / speed) * pt.maxSpeed;
+        pt.vy = (pt.vy / speed) * pt.maxSpeed;
+      }
+      pt.x += pt.vx;
+      pt.y += pt.vy;
+    }
+
+    function display(p, pt) {
+      var speed = Math.sqrt(pt.vx * pt.vx + pt.vy * pt.vy);
+      var sn = Math.min(speed / pt.maxSpeed, 1);
+
+      var cs = params.colorSlow;
+      var cm = params.colorMid;
+      var cf = params.colorFast;
+
+      var r, g, b;
+      if (sn < 0.5) {
+        var t = sn * 2;
+        r = cs[0] + (cm[0] - cs[0]) * t;
+        g = cs[1] + (cm[1] - cs[1]) * t;
+        b = cs[2] + (cm[2] - cs[2]) * t;
+      } else {
+        var t2 = (sn - 0.5) * 2;
+        r = cm[0] + (cf[0] - cm[0]) * t2;
+        g = cm[1] + (cf[1] - cm[1]) * t2;
+        b = cm[2] + (cf[2] - cm[2]) * t2;
+      }
+
+      var alpha = params.trailOpacity * (0.4 + sn * 0.6);
+
+      p.stroke(r, g, b, alpha);
+      p.strokeWeight(sn < 0.3 ? 1.5 : 1);
+      p.line(pt.px, pt.py, pt.x, pt.y);
+    }
+
+    function edges(p, pt) {
+      var respawned = false;
+      if (pt.x > p.width) { pt.x = 0; respawned = true; }
+      if (pt.x < 0) { pt.x = p.width; respawned = true; }
+      if (pt.y > p.height) { pt.y = 0; respawned = true; }
+      if (pt.y < 0) { pt.y = p.height; respawned = true; }
+      if (respawned) {
+        pt.px = pt.x;
+        pt.py = pt.y;
+      }
+    }
+  })();
 </script>
 
 <style>
@@ -207,5 +163,11 @@
     z-index: -1;
     pointer-events: none;
     background: #0a0a0c;
+  }
+
+  #generative-bg :global(canvas) {
+    display: block !important;
+    width: 100% !important;
+    height: 100% !important;
   }
 </style>
