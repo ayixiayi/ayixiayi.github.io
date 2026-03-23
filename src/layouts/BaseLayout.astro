@@ -30,6 +30,11 @@ const { title, description = '个人网站' } = Astro.props;
     <slot />
     <footer class="footer">
       <p>&copy; {new Date().getFullYear()} ayixiayi. 用 Astro 搭建。</p>
+      <p class="visitor-stats">
+        本站总访问 <span id="busuanzi_value_site_pv" class="visitor-count">--</span> 次 · 
+        访客 <span id="busuanzi_value_site_uv" class="visitor-count">--</span> 人
+      </p>
     </footer>
+    <script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
   </body>
 </html>

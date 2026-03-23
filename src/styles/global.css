@@ -267,6 +267,20 @@ a:hover {
   border-radius: 8px;
 }
 
+/* Visitor stats */
+.visitor-stats {
+  margin-top: 8px;
+  font-size: 12px;
+  color: var(--text-muted);
+  opacity: 0.6;
+}
+
+.visitor-count {
+  font-family: var(--font-mono);
+  color: var(--accent);
+  opacity: 0.8;
+}
+
 /* Responsive */
 @media (max-width: 640px) {
   .nav {

@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Favicon Preview</title>
+<style>
+body { background: #0a0a0c; color: #e8e6dc; font-family: monospace; padding: 40px; display: flex; flex-direction: column; align-items: center; gap: 40px; }
+.row { display: flex; gap: 40px; align-items: center; }
+.size-label { font-size: 14px; color: #888; text-align: center; margin-top: 8px; }
+.preview { background: #0a0a0c; border: 1px solid #333; padding: 16px; display: flex; flex-direction: column; align-items: center; }
+.preview-light { background: #e8e6dc; border: 1px solid #ccc; }
+h2 { color: #d97757; margin-bottom: 8px; }
+</style>
+</head>
+<body>
+<h1>Favicon Preview — 回 × Amp Angular</h1>
+
+<h2>Dark background</h2>
+<div class="row">
+  <div class="preview">
+    <img src="favicon.svg" width="128" height="128"/>
+    <div class="size-label">128×128</div>
+  </div>
+  <div class="preview">
+    <img src="favicon.svg" width="64" height="64"/>
+    <div class="size-label">64×64</div>
+  </div>
+  <div class="preview">
+    <img src="favicon.svg" width="32" height="32"/>
+    <div class="size-label">32×32</div>
+  </div>
+  <div class="preview">
+    <img src="favicon.svg" width="16" height="16"/>
+    <div class="size-label">16×16</div>
+  </div>
+</div>
+
+<h2>Light background</h2>
+<div class="row">
+  <div class="preview preview-light">
+    <img src="favicon.svg" width="128" height="128"/>
+    <div class="size-label" style="color:#666">128×128</div>
+  </div>
+  <div class="preview preview-light">
+    <img src="favicon.svg" width="32" height="32"/>
+    <div class="size-label" style="color:#666">32×32</div>
+  </div>
+  <div class="preview preview-light">
+    <img src="favicon.svg" width="16" height="16"/>
+    <div class="size-label" style="color:#666">16×16</div>
+  </div>
+</div>
+
+<h2>SVG Source (full size)</h2>
+<div class="preview" style="padding:32px">
+  <img src="favicon.svg" width="256" height="256"/>
+</div>
+</body>
+</html>
