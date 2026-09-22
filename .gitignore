@@ -1,7 +1,9 @@
 # build output
 dist/
+dist-test/
 # generated types
 .astro/
+.astro-test/
 
 # dependencies
 node_modules/

@@ -114,7 +114,12 @@ npm run build
 npm test
 ```
 
-`npm test` **不自动构建**；它通过 `npm run preview` 在 `http://127.0.0.1:4322` 服务已有 `dist/`。修改代码后先重新构建，避免测试旧产物。本地若已有该端口的服务会被复用，应确认它来自当前构建；CI 不复用现有服务。失败截图和 trace 位于 `test-results/`。
+`npm test` 使用两个独立预览：
+
+- `http://127.0.0.1:4322` 服务正式构建 `dist/`，检查真实文章可访问且不含测试文章。测试不会自动重建正式产物，修改代码或文章后须先运行 `npm run build`。本地可复用已有预览服务，CI 不复用。
+- `http://127.0.0.1:4323` 每次使用 `tests/fixtures/src/content/blog/` 中的独立样例重新构建并启动。页面、内容 schema 和发布逻辑仍来自真实源码；产物和缓存分别写入 `dist-test/`、`.astro-test/`，不改写正式文章或 `dist/`。草稿隔离、日期排序、搜索和目录测试不得依赖真实文章的标题、正文或发布状态。
+
+部署仅上传 `dist/`。失败截图和 trace 位于 `test-results/`。
 
 ## GitHub Pages 工作流
 

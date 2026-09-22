@@ -2,14 +2,16 @@ import { expect, test } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import { existsSync, readFileSync } from 'node:fs';
 
-const publishedTitle = '如果你需要“学”才能使用AI工具，那你根本就不需要它。';
-const publishedPath = '/blog/如果你需要学才能使用ai工具那你根本就不需要它/';
-const draftTitle = '好几个月没写博客了';
+const publishedTitle = '测试样例：公开文章';
+const publishedPath = '/blog/fixture-published/';
+const recentTitle = '测试样例：近期文章';
+const draftTitle = '测试样例：草稿文章';
+const draftPath = '/blog/fixture-draft/';
 
 test('navigation is limited to content sections without decorative copy', async ({
   page,
 }) => {
-  expect(existsSync('dist/art/index.html')).toBe(false);
+  expect(existsSync('dist-test/art/index.html')).toBe(false);
   await page.goto('/');
   await expect(
     page.getByRole('navigation', { name: '主导航' }).getByRole('link'),
@@ -76,7 +78,7 @@ test('OMA search leads to the contact card without exposing a repository URL', a
     .getByRole('link', { name: /OhMyAmpcode/ });
   await expect(result).toHaveAttribute(
     'href',
-    'http://127.0.0.1:4322/projects/#ohmyampcode',
+    new URL('/projects/#ohmyampcode', page.url()).href,
   );
   await result.click();
   await expect(page).toHaveURL('/projects/#ohmyampcode');
@@ -172,10 +174,29 @@ test('the identity is updated without changing the author’s writing', async ({
     page.getByRole('heading', { name: publishedTitle, exact: true }),
   ).toBeVisible();
   await expect(page.locator('article')).toContainText('工具悖论');
+  await expect(page.locator('article')).toContainText('Freshman 与大一');
 });
 
-test('drafts do not produce a publicly accessible build artifact', () => {
-  expect(existsSync(`dist/blog/${draftTitle}/index.html`)).toBe(false);
+test('published posts appear newest first while newer drafts remain hidden', async ({
+  page,
+}) => {
+  await page.goto('/');
+  await expect(page.locator('.post-row h3')).toHaveText([
+    recentTitle,
+    publishedTitle,
+  ]);
+  await page.goto('/blog/');
+  await expect(page.locator('.blog-entry h3')).toHaveText([
+    recentTitle,
+    publishedTitle,
+  ]);
+});
+
+test('drafts do not produce a publicly accessible build artifact', async ({
+  request,
+}) => {
+  expect(existsSync(`dist-test${draftPath}index.html`)).toBe(false);
+  expect((await request.get(draftPath)).status()).toBe(404);
 });
 
 test('RSS, sitemap and search use only published posts', async ({
@@ -186,20 +207,25 @@ test('RSS, sitemap and search use only published posts', async ({
   expect(feed.headers()['content-type']).toContain('xml');
   const rss = await feed.text();
   expect(rss).toContain(publishedTitle);
+  expect(rss).toContain(recentTitle);
+  expect(rss.indexOf(recentTitle)).toBeLessThan(rss.indexOf(publishedTitle));
   expect(rss).not.toContain(draftTitle);
   const search = await request.get('/search-index.json');
   expect(search.ok()).toBe(true);
   const entries = await search.json();
   expect(
-    entries.some((entry: { title: string }) => entry.title === publishedTitle),
-  ).toBe(true);
+    entries
+      .filter((entry: { kind: string }) => entry.kind === '文章')
+      .map((entry: { title: string }) => entry.title),
+  ).toEqual([recentTitle, publishedTitle]);
   expect(
     entries.some((entry: { title: string }) => entry.title === 'MusicBarOs'),
   ).toBe(true);
   expect(JSON.stringify(entries)).not.toContain(draftTitle);
-  const sitemap = readFileSync('dist/sitemap-0.xml', 'utf8');
+  const sitemap = readFileSync('dist-test/sitemap-0.xml', 'utf8');
   expect(decodeURI(sitemap)).toContain(publishedPath);
-  expect(decodeURI(sitemap)).not.toContain(draftTitle);
+  expect(decodeURI(sitemap)).toContain('/blog/fixture-recent/');
+  expect(decodeURI(sitemap)).not.toContain(draftPath);
 });
 
 test('search handles Chinese body text, case-insensitive projects and no results', async ({
@@ -212,7 +238,7 @@ test('search handles Chinese body text, case-insensitive projects and no results
   await expect(search).toBeFocused();
   await search.fill('工具悖论');
   await expect(
-    dialog.getByRole('link', { name: new RegExp('如果你需要') }),
+    dialog.getByRole('link', { name: new RegExp(publishedTitle) }),
   ).toBeVisible();
   await expect(dialog.getByRole('link', { name: /MusicBarOs/ })).toHaveCount(0);
   await search.fill('  musicbaros  ');
@@ -246,20 +272,24 @@ test('search reports a failed index fetch and can retry', async ({ page }) => {
 test('article contents link to real heading anchors', async ({ page }) => {
   await page.goto(publishedPath);
   const toc = page.getByRole('navigation', { name: '文章目录' });
-  await toc.getByRole('link', { name: '半年以后', exact: true }).click();
+  await toc.getByRole('link', { name: '验证记录', exact: true }).click();
   await expect(page).toHaveURL(/#.+/);
   await expect(
-    page.locator('.prose').getByRole('heading', { name: '半年以后' }),
+    page.locator('.prose').getByRole('heading', { name: '验证记录' }),
   ).toBeInViewport();
   await expect(page.locator('time')).toHaveAttribute('datetime', /2026-03-24/);
 });
 
 test('the site remains readable and navigable without JavaScript', async ({
   browser,
+  baseURL,
 }) => {
-  const context = await browser.newContext({ javaScriptEnabled: false });
+  const context = await browser.newContext({
+    baseURL,
+    javaScriptEnabled: false,
+  });
   const page = await context.newPage();
-  await page.goto('http://127.0.0.1:4322/');
+  await page.goto('/');
   await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
   await expect(page.locator('[data-art-fallback]')).toBeVisible();
   await page
@@ -267,7 +297,7 @@ test('the site remains readable and navigable without JavaScript', async ({
     .getByRole('link', { name: '博客' })
     .click();
   await expect(
-    page.getByRole('link', { name: new RegExp('如果你需要') }),
+    page.getByRole('link', { name: new RegExp(publishedTitle) }),
   ).toBeVisible();
   await context.close();
 });
