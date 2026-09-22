@@ -1,99 +1,75 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
-import GenerativeBackground from '../components/GenerativeBackground.astro';
+import GenerativeLandscape from '../components/GenerativeLandscape.astro';
+import ProjectCard from '../components/ProjectCard.astro';
+import Icon from '../components/Icon.astro';
+import { projects, site } from '../data/site';
+import {
+  getPublishedPosts,
+  postUrl,
+  formatDate,
+  readingMinutes,
+} from '../lib/posts';
+
+const posts = (await getPublishedPosts()).slice(0, 3);
 ---
 
-<BaseLayout title="ayixiayi" description="SJTU 自动化 · 兴趣导向型开发者">
-  <GenerativeBackground />
-  <main class="hero">
-    <div class="hero-content">
-      <h1>这里是 <span class="accent">AYIXIAYI</span></h1>
-      <p class="hero-subtitle">SJTU 自动化Freshman · 兴趣导向型开发者</p>
-      <p class="hero-desc">
-        你好。
-      </p>
-      <div class="hero-links">
-        <a href="https://github.com/ayixiayi" target="_blank" rel="noopener" class="hero-link">GitHub</a>
-        <a href="/projects" class="hero-link">Projects →</a>
-        <a href="/blog" class="hero-link">Blog →</a>
-      </div>
+<BaseLayout title={site.name}>
+  <main id="main">
+    <section class="hero" aria-labelledby="intro-title">
+      <GenerativeLandscape>
+        <div class="hero-copy">
+          <h1 id="intro-title">
+            ayixiayi
+            <span class="signature-dot" aria-hidden="true">
+              .
+            </span>
+          </h1>
+          <p class="hero-subtitle">SJTU 自动化 · Sophomore</p>
+          <p class="hero-description">兴趣导向型开发者</p>
+        </div>
+      </GenerativeLandscape>
+    </section>
+
+    <div class="home-content">
+      <section class="home-section" aria-labelledby="projects-title">
+        <div class="section-heading">
+          <h2 id="projects-title">项目</h2>
+          <a href="/projects/" class="text-link">
+            全部项目 <Icon name="arrow" size={16} />
+          </a>
+        </div>
+        <div class="project-grid">
+          {projects.map((project) => (
+            <ProjectCard project={project} />
+          ))}
+        </div>
+      </section>
+
+      <section
+        class="home-section writing-section"
+        aria-labelledby="writing-title"
+      >
+        <div class="section-heading">
+          <h2 id="writing-title">博客</h2>
+          <a href="/blog/" class="text-link">
+            全部文章 <Icon name="arrow" size={16} />
+          </a>
+        </div>
+        {posts.map((post) => (
+          <a class="post-row" href={postUrl(post.id)}>
+            <time datetime={post.data.pubDate.toISOString()}>
+              {formatDate(post.data.pubDate)}
+            </time>
+            <h3>{post.data.title}</h3>
+            <span class="reading-time">
+              约 {readingMinutes(post.body)} 分钟
+            </span>
+            <Icon name="external" size={22} />
+          </a>
+        ))}
+        {posts.length === 0 && <p class="muted">暂无文章。</p>}
+      </section>
     </div>
   </main>
 </BaseLayout>
-
-<style>
-  .hero {
-    min-height: 100vh;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    position: relative;
-  }
-
-  .hero-content {
-    text-align: center;
-    padding: 32px;
-    max-width: 600px;
-  }
-
-  .hero-content h1 {
-    font-size: 48px;
-    font-weight: 700;
-    letter-spacing: -0.04em;
-    margin-bottom: 12px;
-    color: #e8e6dc;
-  }
-
-  .accent {
-    color: #d97757;
-  }
-
-  .hero-subtitle {
-    font-size: 18px;
-    color: #8a8880;
-    margin-bottom: 20px;
-    letter-spacing: 0.05em;
-  }
-
-  .hero-desc {
-    font-size: 16px;
-    color: #b0aea5;
-    margin-bottom: 32px;
-    line-height: 1.6;
-  }
-
-  .hero-links {
-    display: flex;
-    gap: 16px;
-    justify-content: center;
-    flex-wrap: wrap;
-  }
-
-  .hero-link {
-    padding: 10px 24px;
-    border: 1px solid #2a2a30;
-    border-radius: 8px;
-    color: #e8e6dc;
-    font-size: 14px;
-    font-weight: 500;
-    transition: all 0.2s;
-    background: rgba(20, 20, 24, 0.6);
-    backdrop-filter: blur(8px);
-  }
-
-  .hero-link:hover {
-    border-color: #d97757;
-    color: #d97757;
-    transform: translateY(-1px);
-  }
-
-  @media (max-width: 640px) {
-    .hero-content h1 {
-      font-size: 32px;
-    }
-
-    .hero-subtitle {
-      font-size: 15px;
-    }
-  }
-</style>

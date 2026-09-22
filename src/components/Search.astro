@@ -1,0 +1,373 @@
+<button
+  id="search-trigger"
+  class="search-trigger"
+  type="button"
+  aria-label="搜索站点"
+  aria-haspopup="dialog"
+  title="搜索站点（Ctrl/⌘ K）"
+  hidden
+>
+  <svg
+    width="17"
+    height="17"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="1.6"
+    aria-hidden="true"
+  >
+    <circle cx="10.5" cy="10.5" r="6.5" />
+    <path d="m16 16 4.5 4.5" />
+  </svg>
+</button>
+
+<dialog id="site-search" aria-labelledby="search-title">
+  <div class="search-heading">
+    <h2 id="search-title">搜索</h2>
+    <button id="search-close" type="button" aria-label="关闭搜索">
+      关闭
+    </button>
+  </div>
+  <label for="search-input">搜索内容</label>
+  <input
+    id="search-input"
+    type="search"
+    placeholder="文章或项目"
+    autocomplete="off"
+    autofocus
+  />
+  <p id="search-status" role="status" aria-live="polite">
+    输入关键词
+  </p>
+  <button id="search-retry" type="button" hidden>
+    重试
+  </button>
+  <ul id="search-results" aria-label="搜索结果"></ul>
+</dialog>
+
+<script>
+  type SearchEntry = {
+    title: string;
+    description: string;
+    url: string;
+    kind: string;
+    text: string;
+  };
+
+  const trigger = document.getElementById('search-trigger');
+  const dialog = document.getElementById('site-search');
+  const input = document.getElementById('search-input');
+  const close = document.getElementById('search-close');
+  const retry = document.getElementById('search-retry');
+  const status = document.getElementById('search-status');
+  const results = document.getElementById('search-results');
+
+  if (
+    trigger instanceof HTMLButtonElement &&
+    dialog instanceof HTMLDialogElement &&
+    input instanceof HTMLInputElement &&
+    close &&
+    retry &&
+    status &&
+    results
+  ) {
+    let entries: SearchEntry[] | null = null;
+    let loading = false;
+    let focusAfterClose: HTMLElement = trigger;
+    const normalize = (value: string) =>
+      value.normalize('NFKC').toLowerCase().trim();
+
+    function render() {
+      if (!entries || !input || !results || !status) return;
+      const terms = normalize((input as HTMLInputElement).value)
+        .split(/\s+/u)
+        .filter(Boolean);
+      const matches = entries.filter((entry) => {
+        const content = normalize(
+          `${entry.title} ${entry.description} ${entry.text}`,
+        );
+        return terms.every((term) => content.includes(term));
+      });
+      results.replaceChildren();
+      status.textContent =
+        matches.length === 0
+          ? '没有找到匹配的内容'
+          : terms.length
+            ? `找到 ${matches.length} 项内容`
+            : `全部 ${matches.length} 项内容`;
+      for (const entry of matches) {
+        const url = new URL(entry.url, window.location.origin);
+        if (url.protocol !== 'https:' && url.protocol !== 'http:') continue;
+        const item = document.createElement('li');
+        const link = document.createElement('a');
+        link.href = url.href;
+        if (url.origin !== window.location.origin) {
+          link.target = '_blank';
+          link.rel = 'noopener noreferrer';
+        }
+        const kind = document.createElement('span');
+        kind.className = 'result-kind';
+        kind.textContent = entry.kind;
+        const title = document.createElement('strong');
+        title.textContent = entry.title;
+        const description = document.createElement('p');
+        description.textContent =
+          entry.description.length > 180
+            ? `${entry.description.slice(0, 180)}…`
+            : entry.description;
+        link.append(kind, title, description);
+        item.append(link);
+        results.append(item);
+      }
+    }
+
+    async function loadIndex() {
+      if (loading || !retry || !status || !results) return;
+      if (entries) {
+        render();
+        return;
+      }
+      loading = true;
+      retry.hidden = true;
+      results.replaceChildren();
+      status.textContent = '正在加载搜索内容…';
+      try {
+        const response = await fetch('/search-index.json');
+        if (!response.ok) throw new Error('Search index unavailable');
+        const data: unknown = await response.json();
+        if (
+          !Array.isArray(data) ||
+          !data.every(
+            (entry) =>
+              entry &&
+              ['title', 'description', 'url', 'kind', 'text'].every(
+                (key) => typeof entry[key] === 'string',
+              ) &&
+              URL.canParse(entry.url, window.location.origin),
+          )
+        ) {
+          throw new Error('Invalid search index');
+        }
+        entries = data;
+        render();
+      } catch {
+        entries = null;
+        status.textContent = '搜索暂时不可用，请重试。';
+        retry.hidden = false;
+      } finally {
+        loading = false;
+      }
+    }
+
+    function openSearch() {
+      if (
+        !(dialog instanceof HTMLDialogElement) ||
+        !(input instanceof HTMLInputElement) ||
+        dialog.open
+      )
+        return;
+      dialog.showModal();
+      input.focus();
+      void loadIndex();
+    }
+
+    trigger.addEventListener('click', openSearch);
+    close.addEventListener('click', () => dialog.close());
+    dialog.addEventListener('close', () => {
+      focusAfterClose.focus({ preventScroll: true });
+      focusAfterClose = trigger;
+    });
+    results.addEventListener('click', (event) => {
+      if (
+        event.defaultPrevented ||
+        event.button !== 0 ||
+        event.metaKey ||
+        event.ctrlKey ||
+        event.shiftKey ||
+        event.altKey
+      )
+        return;
+      const link =
+        event.target instanceof Element ? event.target.closest('a') : null;
+      if (
+        !link ||
+        link.origin !== window.location.origin ||
+        link.pathname !== window.location.pathname ||
+        link.search !== window.location.search ||
+        !link.hash
+      )
+        return;
+      const destination = document.getElementById(
+        decodeURIComponent(link.hash.slice(1)),
+      );
+      if (!destination) return;
+      focusAfterClose = destination;
+      dialog.close();
+    });
+    dialog.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape' && !event.isComposing) {
+        // Search inputs consume Escape to clear their value before the dialog can close.
+        event.preventDefault();
+        dialog.close();
+      }
+    });
+    dialog.addEventListener('click', (event) => {
+      const bounds = dialog.getBoundingClientRect();
+      if (
+        event.target === dialog &&
+        (event.clientX < bounds.left ||
+          event.clientX > bounds.right ||
+          event.clientY < bounds.top ||
+          event.clientY > bounds.bottom)
+      )
+        dialog.close();
+    });
+    input.addEventListener('input', render);
+    retry.addEventListener('click', () => {
+      void loadIndex();
+    });
+    document.addEventListener('keydown', (event) => {
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
+        event.preventDefault();
+        openSearch();
+      }
+    });
+    trigger.hidden = false;
+  }
+</script>
+
+<style>
+  .search-trigger {
+    display: grid;
+    place-items: center;
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: var(--text-muted);
+    font: inherit;
+    cursor: pointer;
+  }
+  .search-trigger[hidden],
+  #search-retry[hidden] {
+    display: none;
+  }
+  .search-trigger:hover {
+    color: var(--text);
+  }
+  dialog {
+    width: min(680px, calc(100vw - 2rem));
+    max-height: min(80vh, 760px);
+    padding: 1.75rem;
+    box-sizing: border-box;
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    background: var(--surface);
+    color: var(--text);
+    font-family: var(--font-sans);
+    overflow: auto;
+  }
+  dialog::backdrop {
+    background: rgb(5 10 14 / 78%);
+  }
+  .search-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+  }
+  h2 {
+    margin: 0;
+    font-size: 1.3rem;
+    font-weight: 500;
+  }
+  #search-close,
+  #search-retry {
+    background: var(--surface-raised);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    padding: 0.5rem 0.75rem;
+    font: inherit;
+    cursor: pointer;
+  }
+  #search-close {
+    font-size: 0.8rem;
+  }
+  label {
+    display: block;
+    margin-bottom: 0.55rem;
+    color: var(--text-muted);
+    font-size: 0.85rem;
+  }
+  input {
+    box-sizing: border-box;
+    width: 100%;
+    padding: 0.85rem 1rem;
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    background: var(--bg);
+    color: var(--text);
+    font: inherit;
+    font-size: 1rem;
+  }
+  input::placeholder {
+    color: var(--text-muted);
+  }
+  #search-status {
+    margin: 1rem 0;
+    color: var(--text-muted);
+    font-size: 0.85rem;
+  }
+  #search-results {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  #search-results :global(li + li) {
+    border-top: 1px solid var(--border);
+  }
+  #search-results :global(a) {
+    display: block;
+    padding: 1rem 0.5rem;
+    border-radius: 3px;
+    color: var(--text);
+    text-decoration: none;
+    overflow-wrap: anywhere;
+  }
+  #search-results :global(a:hover) {
+    background: var(--surface-raised);
+  }
+  #search-results :global(.result-kind) {
+    display: block;
+    margin-bottom: 0.3rem;
+    color: var(--accent);
+    font-size: 0.7rem;
+    letter-spacing: 0.08em;
+  }
+  #search-results :global(strong) {
+    font-size: 1rem;
+    font-weight: 500;
+    line-height: 1.6;
+  }
+  #search-results :global(p) {
+    margin: 0.35rem 0 0;
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    line-height: 1.7;
+  }
+  button:focus-visible,
+  input:focus-visible,
+  #search-results :global(a:focus-visible) {
+    outline: 2px solid var(--accent);
+    outline-offset: 3px;
+  }
+  @media (max-width: 600px) {
+    dialog {
+      padding: 1.2rem;
+      max-height: 85dvh;
+    }
+  }
+</style>

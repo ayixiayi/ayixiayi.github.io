@@ -1,24 +1,72 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
+import { site } from '../data/site';
 ---
 
-<BaseLayout title="About - ayixiayi" description="关于我">
-  <main class="container">
-    <div class="page-header">
-      <h1>About</h1>
-    </div>
-    <div class="prose">
-      <p>
-        你好。 我是 <strong>ayixiayi</strong>，上海交通大学大一自动化专业学生，兴趣导向型开发者。
-      </p>
-      <p>
-        我对技术充满好奇，准确地说，我爱着作为工具，而不是学科的计算机。搭建这个网站是一时兴起 —— 用 <a href="https://astro.build">Astro</a> 搭建，
-        背景是基于 p5.js 的生成艺术作品 Luminous Erosion，每次刷新都会生成不同的流场图案。
-      </p>
-      <h2>Links</h2>
-      <ul>
-        <li><a href="https://github.com/ayixiayi" target="_blank" rel="noopener">GitHub</a></li>
-      </ul>
+<BaseLayout
+  title="关于"
+  description="上海交通大学大二自动化专业学生，兴趣导向型开发者。"
+>
+  <main id="main" class="container about-page">
+    <header class="page-header">
+      <h1>关于</h1>
+    </header>
+    <div class="about-grid">
+      <div class="prose">
+        <p>上海交通大学大二自动化专业学生，兴趣导向型开发者。</p>
+        <p>我对技术充满好奇，准确地说，我爱着作为工具，而不是学科的计算机。</p>
+        <h2>关于本站</h2>
+        <p>
+          搭建这个网站是一时兴起。这里收录个人项目与文章，使用
+          <a
+            href="https://astro.build/"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Astro
+          </a>
+          构建，以 Markdown 写作，托管于 GitHub Pages。
+        </p>
+        <p>
+          首页风景的灵感来自 Theodor Kittelsen 的
+          <a
+            href="https://www.nasjonalmuseet.no/en/collection/object/NG.M.00546"
+            target="_blank"
+            rel="noopener noreferrer"
+            lang="en"
+          >
+            Far, far away Soria Moria Palace shimmered like Gold
+          </a>
+          。 层叠的山地、雾谷与远处的金色宫殿，是这幅生成图像的构图基础。
+        </p>
+        <p>
+          图像由
+          <a href="https://p5js.org/" target="_blank" rel="noopener noreferrer">
+            p5.js
+          </a>
+          绘制，山体与笔触由噪声和随机种子控制。点击首页的「重新生成」可以更换风景；保留生成后的页面地址，可以再次打开同一构图。
+        </p>
+        <h2>链接</h2>
+        <ul>
+          <li>
+            <a href={site.github} target="_blank" rel="noopener noreferrer">
+              GitHub
+            </a>
+          </li>
+          <li>
+            <a href="/rss.xml">RSS</a>
+          </li>
+        </ul>
+      </div>
+      <figure class="about-illustration">
+        <img
+          src="/images/landscape.webp"
+          alt="程序生成的山谷与远景宫殿"
+          width="1600"
+          height="1000"
+          decoding="async"
+        />
+      </figure>
     </div>
   </main>
 </BaseLayout>

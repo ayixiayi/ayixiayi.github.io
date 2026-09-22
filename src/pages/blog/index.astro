@@ -1,30 +1,61 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
-import { getCollection } from 'astro:content';
+import Icon from '../../components/Icon.astro';
+import {
+  getPublishedPosts,
+  postUrl,
+  formatDate,
+  readingMinutes,
+  displayTag,
+} from '../../lib/posts';
 
-const posts = (await getCollection('blog'))
-  .filter((post) => !post.data.draft)
-  .sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf());
-
-function formatDate(date: Date): string {
-  return date.toISOString().slice(0, 10);
-}
+const posts = await getPublishedPosts();
+const years = [
+  ...new Set(posts.map((post) => post.data.pubDate.getUTCFullYear())),
+];
 ---
 
-<BaseLayout title="博客 - ayixiayi" description="随笔与记录">
-  <main class="container">
-    <div class="page-header">
+<BaseLayout title="博客" description="ayixiayi 的文章列表。">
+  <main id="main" class="container blog-page">
+    <header class="page-header">
       <h1>博客</h1>
       <p>学到的和想到的。</p>
-    </div>
-    <div class="post-list">
-      {posts.map((post) => (
-        <div class="post-item">
-          <a href={`/blog/${post.id}`} class="post-title">{post.data.title}</a>
-          <span class="post-date">{formatDate(post.data.pubDate)}</span>
+      <a href="/rss.xml" class="text-link rss-link">
+        <Icon name="rss" size={16} />
+        RSS
+      </a>
+    </header>
+    {years.map((year) => (
+      <section class="blog-year" aria-label={`${year} 年的文章`}>
+        <h2 class="year-label">{year}</h2>
+        <div>
+          {posts
+            .filter((post) => post.data.pubDate.getUTCFullYear() === year)
+            .map((post) => (
+              <article class="blog-entry">
+                <div class="post-meta">
+                  <time datetime={post.data.pubDate.toISOString()}>
+                    {formatDate(post.data.pubDate)}
+                  </time>
+                  <span>约 {readingMinutes(post.body)} 分钟阅读</span>
+                </div>
+                <h3>
+                  <a href={postUrl(post.id)}>
+                    {post.data.title}
+                    <Icon name="external" size={22} />
+                  </a>
+                </h3>
+                <p>{post.data.description}</p>
+                <div class="project-tags">
+                  {post.data.tags?.map((tag) => (
+                    <span>{displayTag(tag)}</span>
+                  ))}
+                </div>
+              </article>
+            ))}
         </div>
-      ))}
-      {posts.length === 0 && <p style="color: var(--text-muted);">还没有文章，敬请期待。</p>}
-    </div>
+      </section>
+    ))}
+    {posts.length === 0 && <p class="muted">暂无文章。</p>}
   </main>
 </BaseLayout>

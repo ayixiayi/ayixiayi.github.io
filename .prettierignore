@@ -1,0 +1,9 @@
+dist/
+.astro/
+node_modules/
+test-results/
+playwright-report/
+package-lock.json
+src/content/
+public/admin/
+public/favicon-preview.html

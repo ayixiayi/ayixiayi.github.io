@@ -1,0 +1,79 @@
+---
+import type { projects } from '../data/site';
+import Icon from './Icon.astro';
+interface Props {
+  project: (typeof projects)[number];
+}
+const { project } = Astro.props;
+const email = project.url.startsWith('mailto:')
+  ? project.url.slice('mailto:'.length)
+  : undefined;
+---
+
+<a
+  class="project-card"
+  id={project.title.toLowerCase()}
+  href={project.url}
+  target={email ? undefined : '_blank'}
+  rel={email ? undefined : 'noopener noreferrer'}
+>
+  <div class:list={['project-visual', project.motif]} aria-hidden="true">
+    <svg viewBox="0 0 360 132" fill="none" focusable="false">
+      {project.motif === 'memory' && (
+        <g>
+          <path d="m88 42 92-26 92 26-92 26Z" />
+          <path d="m88 59 92 26 92-26M88 77l92 26 92-26" />
+          <path d="M88 42v35m92-9v35m92-61v35" stroke-dasharray="3 5" />
+          <circle cx="180" cy="42" r="4" />
+          <circle cx="180" cy="68" r="2" />
+          <circle cx="180" cy="85" r="2" />
+        </g>
+      )}
+      {project.motif === 'orchestration' && (
+        <g>
+          <path d="M165 66h-40l-23-27m93 27h40l23-27M165 66h-40l-23 27m93-27h40l23 27" />
+          <path d="M180 50V26m0 56v24" />
+          <rect x="165" y="50" width="30" height="32" rx="2" />
+          <path d="m173 59 6 7-6 7m9 0h7" />
+          <circle cx="99" cy="35" r="5" />
+          <circle cx="261" cy="35" r="5" />
+          <circle cx="99" cy="97" r="5" />
+          <circle cx="261" cy="97" r="5" />
+          <circle cx="180" cy="21" r="5" />
+          <circle cx="180" cy="111" r="5" />
+          <path
+            d="M120 35h35m50 0h35m-120 62h35m50 0h35"
+            stroke-dasharray="2 5"
+            opacity="0.4"
+          />
+        </g>
+      )}
+      {project.motif === 'music' && (
+        <g>
+          <circle cx="166" cy="66" r="46" />
+          <circle cx="166" cy="66" r="36" />
+          <circle cx="166" cy="66" r="30" />
+          <circle cx="166" cy="66" r="12" />
+          <circle cx="166" cy="66" r="3" />
+          <path d="M234 22v55l-20 24m14-79v53l-18 22" />
+          <path d="m210 96 6 5-6 8-6-5Z" />
+        </g>
+      )}
+    </svg>
+  </div>
+  <h3>
+    {project.title} <Icon name={email ? 'mail' : 'external'} size={17} />
+  </h3>
+  <p>{project.description}</p>
+  <div class="project-tags">
+    {project.tags.map((tag) => (
+      <span>{tag}</span>
+    ))}
+  </div>
+  {email && (
+    <div class="project-contact">
+      <p>如需查看代码或试用，请通过以下邮箱联系我。</p>
+      <span>{email}</span>
+    </div>
+  )}
+</a>

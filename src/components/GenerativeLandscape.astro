@@ -1,0 +1,127 @@
+---
+import { DEFAULT_SEED } from '../art/landscape';
+import Icon from './Icon.astro';
+---
+
+<generative-landscape data-seed={DEFAULT_SEED} data-state="poster">
+  <div
+    class="landscape-surface"
+    role="img"
+    aria-label="青灰色山谷与远处的金色宫殿"
+  >
+    <img
+      data-art-fallback
+      src="/images/landscape.webp"
+      alt=""
+      width="1600"
+      height="1000"
+      fetchpriority="high"
+    />
+    <div data-canvas-host aria-hidden="true"></div>
+  </div>
+  <slot />
+  <div class="landscape-caption">
+    <span data-art-status class="art-status" role="status">
+      seed {DEFAULT_SEED}
+    </span>
+    <button type="button" data-random hidden aria-label="重新生成图像">
+      <Icon name="shuffle" size={14} />
+      重新生成
+    </button>
+  </div>
+</generative-landscape>
+
+<script>
+  import type P5 from 'p5';
+
+  class GenerativeLandscape extends HTMLElement {
+    private renderer?: P5;
+    private disposed = false;
+
+    connectedCallback() {
+      const host = this.querySelector<HTMLElement>('[data-canvas-host]')!;
+      const status = this.querySelector<HTMLElement>('[data-art-status]')!;
+      const random = this.querySelector<HTMLButtonElement>('[data-random]')!;
+      let seed = Number(this.dataset.seed);
+      let busy = false;
+      let restoreFocus = false;
+
+      const setBusy = (value: boolean) => {
+        if (value) restoreFocus = document.activeElement === random;
+        busy = value;
+        random.disabled = value;
+        this.querySelector('[role="img"]')!.setAttribute(
+          'aria-busy',
+          String(value),
+        );
+        if (!value && restoreFocus && document.activeElement === document.body)
+          random.focus({ preventScroll: true });
+      };
+
+      const render = async () => {
+        if (busy) return;
+        setBusy(true);
+        this.dataset.state = 'loading';
+        status.textContent = '正在生成…';
+        try {
+          const [{ default: p5 }, { createLandscapeSketch }] =
+            await Promise.all([import('p5'), import('../art/landscape')]);
+          if (this.disposed) return;
+          this.renderer?.remove();
+          host.replaceChildren();
+          this.renderer = new p5(
+            createLandscapeSketch({
+              seed,
+              width: 1600,
+              height: 1000,
+              onComplete: () => {
+                this.dataset.state = 'ready';
+                status.textContent = `seed ${seed}`;
+                const url = new URL(location.href);
+                url.searchParams.set('seed', String(seed));
+                history.replaceState(null, '', url);
+                setBusy(false);
+              },
+            }),
+            host,
+          );
+        } catch {
+          this.renderer?.remove();
+          this.dataset.state = 'error';
+          status.textContent = '生成失败，请重试';
+          setBusy(false);
+        }
+      };
+
+      random.hidden = false;
+      random.addEventListener('click', () => {
+        if (busy) return;
+        seed =
+          ((seed + (crypto.getRandomValues(new Uint32Array(1))[0] % 999998)) %
+            999999) +
+          1;
+        void render();
+      });
+
+      const requestedSeed = Number(
+        new URLSearchParams(location.search).get('seed'),
+      );
+      if (
+        Number.isInteger(requestedSeed) &&
+        requestedSeed >= 1 &&
+        requestedSeed <= 999999
+      ) {
+        seed = requestedSeed;
+        void render();
+      }
+    }
+
+    disconnectedCallback() {
+      this.disposed = true;
+      this.renderer?.remove();
+    }
+  }
+
+  if (!customElements.get('generative-landscape'))
+    customElements.define('generative-landscape', GenerativeLandscape);
+</script>

@@ -1,40 +1,86 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
-import { getCollection, render } from 'astro:content';
+import { render, type CollectionEntry } from 'astro:content';
+import {
+  getPublishedPosts,
+  formatDate,
+  readingMinutes,
+  displayTag,
+} from '../../lib/posts';
+import Icon from '../../components/Icon.astro';
 
 export async function getStaticPaths() {
-  const posts = await getCollection('blog');
+  const posts = await getPublishedPosts();
   return posts.map((post) => ({
     params: { slug: post.id },
     props: { post },
   }));
 }
 
-const { post } = Astro.props;
-const { Content } = await render(post);
-
-function formatDate(date: Date): string {
-  return date.toLocaleDateString('zh-CN', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  });
+interface Props {
+  post: CollectionEntry<'blog'>;
 }
+const { post } = Astro.props;
+const { Content, headings } = await render(post);
+const contents = headings.filter((heading) => heading.depth <= 3);
 ---
 
-<BaseLayout title={`${post.data.title} - ayixiayi`} description={post.data.description}>
-  <main class="container">
-    <article class="prose">
-      <header style="margin-bottom: 2em;">
-        <h1 style="margin-top: 0;">{post.data.title}</h1>
-        <time style="color: var(--text-muted); font-size: 14px; font-family: var(--font-mono);">
+<BaseLayout
+  title={post.data.title}
+  description={post.data.description}
+  article
+  publishedAt={post.data.pubDate}
+>
+  <main id="main" class="container article-page">
+    <a href="/blog/" class="text-link back-link">
+      <Icon name="back" size={17} />
+      返回博客
+    </a>
+    <header class="article-header">
+      <div class="post-meta">
+        <time datetime={post.data.pubDate.toISOString()}>
           {formatDate(post.data.pubDate)}
         </time>
-      </header>
-      <Content />
-    </article>
-    <div style="margin-top: 3em; padding-top: 2em; border-top: 1px solid var(--border);">
-      <a href="/blog">← 返回博客列表</a>
+        <span>约 {readingMinutes(post.body)} 分钟阅读</span>
+      </div>
+      <h1>{post.data.title}</h1>
+      <div class="project-tags">
+        {post.data.tags?.map((tag) => (
+          <span>{displayTag(tag)}</span>
+        ))}
+      </div>
+    </header>
+    <div class="article-grid">
+      <article class="prose">
+        <Content />
+      </article>
+      {contents.length > 0 && (
+        <aside class="toc">
+          <nav aria-label="文章目录">
+            <p class="toc-title">目录</p>
+            <ol>
+              {contents.map((heading) => (
+                <li class:list={{ nested: heading.depth > 1 }}>
+                  <a href={`#${heading.slug}`}>{heading.text}</a>
+                </li>
+              ))}
+            </ol>
+          </nav>
+          <a href="#main" class="text-link">
+            回到顶部 ↑
+          </a>
+        </aside>
+      )}
+    </div>
+    <div class="page-end">
+      <a href="/blog/" class="text-link">
+        <Icon name="back" size={17} />
+        全部文章
+      </a>
+      <a href="/rss.xml" class="text-link">
+        <Icon name="rss" size={15} />
+        订阅更新
+      </a>
     </div>
   </main>
 </BaseLayout>

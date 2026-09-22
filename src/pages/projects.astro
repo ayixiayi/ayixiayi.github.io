@@ -1,45 +1,18 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
-
-const projects = [
-  {
-    title: 'OpenMemory-enhanced',
-    description: 'AI 编程 Agent 的持久化记忆 MCP 服务器，基于 CaviraOSS/OpenMemory 独立开发。',
-    tags: ['TypeScript', 'MCP', 'AI Agent'],
-    url: 'https://github.com/ayixiayi/OpenMemory-enhanced',
-  },
-  {
-    title: 'MusicBarOs',
-    description: 'SJTU 工程学导论课项目，还原前流媒体时代的音乐播放体验。',
-    tags: ['JavaScript'],
-    url: 'https://github.com/ayixiayi/MusicBarOs',
-  },
-  {
-    title: 'github-picks-skill',
-    description: 'AI agent skill：每日 GitHub 开源项目精选推荐，具备偏好学习能力。',
-    tags: ['Python', 'AI Agent'],
-    url: 'https://github.com/ayixiayi/github-picks-skill',
-  },
-];
+import ProjectCard from '../components/ProjectCard.astro';
+import { projects } from '../data/site';
 ---
 
-<BaseLayout title="项目 - ayixiayi" description="我的项目">
-  <main class="container">
-    <div class="page-header">
+<BaseLayout title="项目" description="ayixiayi 的项目列表。">
+  <main id="main" class="container projects-page">
+    <header class="page-header">
       <h1>项目</h1>
       <p>做过的和在做的东西。</p>
-    </div>
-    <div class="card-grid">
+    </header>
+    <div class="project-grid">
       {projects.map((project) => (
-        <a href={project.url} target="_blank" rel="noopener" class="card">
-          <h3>{project.title}</h3>
-          <p>{project.description}</p>
-          <div class="card-meta">
-            {project.tags.map((tag) => (
-              <span class="tag">{tag}</span>
-            ))}
-          </div>
-        </a>
+        <ProjectCard project={project} />
       ))}
     </div>
   </main>
