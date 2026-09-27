@@ -33,15 +33,19 @@ const posts = (await getPublishedPosts()).slice(0, 3);
 
     <div class="home-content">
       <section class="home-section" aria-labelledby="projects-title">
-        <div class="section-heading">
+        <div class="section-heading" data-reveal>
+          <span class="section-index" aria-hidden="true">
+            01
+          </span>
           <h2 id="projects-title">项目</h2>
+          <span class="section-rule" aria-hidden="true"></span>
           <a href="/projects/" class="text-link">
             全部项目 <Icon name="arrow" size={16} />
           </a>
         </div>
         <div class="project-grid">
-          {projects.map((project) => (
-            <ProjectCard project={project} />
+          {projects.map((project, index) => (
+            <ProjectCard project={project} index={index} />
           ))}
         </div>
       </section>
@@ -50,14 +54,23 @@ const posts = (await getPublishedPosts()).slice(0, 3);
         class="home-section writing-section"
         aria-labelledby="writing-title"
       >
-        <div class="section-heading">
+        <div class="section-heading" data-reveal>
+          <span class="section-index" aria-hidden="true">
+            02
+          </span>
           <h2 id="writing-title">博客</h2>
+          <span class="section-rule" aria-hidden="true"></span>
           <a href="/blog/" class="text-link">
             全部文章 <Icon name="arrow" size={16} />
           </a>
         </div>
-        {posts.map((post) => (
-          <a class="post-row" href={postUrl(post.id)}>
+        {posts.map((post, index) => (
+          <a
+            class="post-row"
+            href={postUrl(post.id)}
+            data-reveal
+            style={`--reveal-delay: ${index * 90}ms`}
+          >
             <time datetime={post.data.pubDate.toISOString()}>
               {formatDate(post.data.pubDate)}
             </time>
@@ -65,7 +78,9 @@ const posts = (await getPublishedPosts()).slice(0, 3);
             <span class="reading-time">
               约 {readingMinutes(post.body)} 分钟
             </span>
-            <Icon name="external" size={22} />
+            <span class="post-arrow">
+              <Icon name="external" size={22} />
+            </span>
           </a>
         ))}
         {posts.length === 0 && <p class="muted">暂无文章。</p>}

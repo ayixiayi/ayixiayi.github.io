@@ -8,11 +8,11 @@ import { site } from '../data/site';
   description="上海交通大学大二自动化专业学生，兴趣导向型开发者。"
 >
   <main id="main" class="container about-page">
-    <header class="page-header">
+    <header class="page-header" data-reveal>
       <h1>关于</h1>
     </header>
     <div class="about-grid">
-      <div class="prose">
+      <div class="prose" data-reveal>
         <p>上海交通大学大二自动化专业学生，兴趣导向型开发者。</p>
         <p>我对技术充满好奇，准确地说，我爱着作为工具，而不是学科的计算机。</p>
         <h2>关于本站</h2>
@@ -58,7 +58,11 @@ import { site } from '../data/site';
           </li>
         </ul>
       </div>
-      <figure class="about-illustration">
+      <figure
+        class="about-illustration"
+        data-reveal
+        style="--reveal-delay: 160ms"
+      >
         <img
           src="/images/landscape.webp"
           alt="程序生成的山谷与远景宫殿"

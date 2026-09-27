@@ -9,18 +9,24 @@ import Icon from './Icon.astro';
     role="img"
     aria-label="青灰色山谷与远处的金色宫殿"
   >
-    <img
-      data-art-fallback
-      src="/images/landscape.webp"
-      alt=""
-      width="1600"
-      height="1000"
-      fetchpriority="high"
-    />
-    <div data-canvas-host aria-hidden="true"></div>
+    <div class="landscape-layer">
+      <img
+        data-art-fallback
+        src="/images/landscape.webp"
+        alt=""
+        width="1600"
+        height="1000"
+        fetchpriority="high"
+      />
+      <div data-canvas-host aria-hidden="true"></div>
+    </div>
+    <div class="landscape-glaze" aria-hidden="true"></div>
   </div>
   <slot />
   <div class="landscape-caption">
+    <span class="art-progress" aria-hidden="true">
+      <span data-art-progress></span>
+    </span>
     <span data-art-status class="art-status" role="status">
       seed {DEFAULT_SEED}
     </span>
@@ -37,10 +43,17 @@ import Icon from './Icon.astro';
   class GenerativeLandscape extends HTMLElement {
     private renderer?: P5;
     private disposed = false;
+    private snapshotUrl?: string;
+    private listeners = new AbortController();
 
     connectedCallback() {
+      const surface = this.querySelector<HTMLElement>('.landscape-surface')!;
       const host = this.querySelector<HTMLElement>('[data-canvas-host]')!;
+      const fallback = this.querySelector<HTMLImageElement>(
+        '[data-art-fallback]',
+      )!;
       const status = this.querySelector<HTMLElement>('[data-art-status]')!;
+      const progress = this.querySelector<HTMLElement>('[data-art-progress]')!;
       const random = this.querySelector<HTMLButtonElement>('[data-random]')!;
       let seed = Number(this.dataset.seed);
       let busy = false;
@@ -50,18 +63,36 @@ import Icon from './Icon.astro';
         if (value) restoreFocus = document.activeElement === random;
         busy = value;
         random.disabled = value;
-        this.querySelector('[role="img"]')!.setAttribute(
-          'aria-busy',
-          String(value),
-        );
+        surface.setAttribute('aria-busy', String(value));
         if (!value && restoreFocus && document.activeElement === document.body)
           random.focus({ preventScroll: true });
+      };
+
+      // The finished painting stays underneath while the next one is laid over it.
+      const keepCurrentPainting = async () => {
+        const canvas = host.querySelector('canvas');
+        if (!canvas) return;
+        const blob = await new Promise<Blob | null>((resolve) =>
+          canvas.toBlob(resolve, 'image/webp', 0.92),
+        );
+        if (!blob || this.disposed) return;
+        const previous = this.snapshotUrl;
+        this.snapshotUrl = URL.createObjectURL(blob);
+        fallback.src = this.snapshotUrl;
+        await fallback.decode().catch(() => undefined);
+        if (previous) URL.revokeObjectURL(previous);
       };
 
       const render = async () => {
         if (busy) return;
         setBusy(true);
+        try {
+          await keepCurrentPainting();
+        } catch {
+          // A missing snapshot only means the default poster shows beneath.
+        }
         this.dataset.state = 'loading';
+        progress.style.transform = 'scaleX(0)';
         status.textContent = '正在生成…';
         try {
           const [{ default: p5 }, { createLandscapeSketch }] =
@@ -74,6 +105,11 @@ import Icon from './Icon.astro';
               seed,
               width: 1600,
               height: 1000,
+              onProgress: (done) => {
+                if (this.dataset.state === 'loading')
+                  this.dataset.state = 'painting';
+                progress.style.transform = `scaleX(${done})`;
+              },
               onComplete: () => {
                 this.dataset.state = 'ready';
                 status.textContent = `seed ${seed}`;
@@ -103,6 +139,48 @@ import Icon from './Icon.astro';
         void render();
       });
 
+      // A soft gallery light follows the pointer across the canvas.
+      if (
+        matchMedia(
+          '(hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference)',
+        ).matches
+      ) {
+        let frame = 0;
+        this.addEventListener('pointermove', (event) => {
+          if (frame) return;
+          frame = requestAnimationFrame(() => {
+            frame = 0;
+            const box = surface.getBoundingClientRect();
+            surface.style.setProperty(
+              '--light-x',
+              `${(((event.clientX - box.left) / box.width) * 100).toFixed(1)}%`,
+            );
+            surface.style.setProperty(
+              '--light-y',
+              `${(((event.clientY - box.top) / box.height) * 100).toFixed(1)}%`,
+            );
+          });
+        });
+      }
+
+      // Parallax is scroll-driven by hand: a scroll timeline would keep the
+      // canvas layer animating, and slow the painting, even while idle.
+      const layer = this.querySelector<HTMLElement>('.landscape-layer')!;
+      let driftFrame = 0;
+      const drift = () => {
+        driftFrame = 0;
+        const progress = Math.min(1, Math.max(0, scrollY / innerHeight));
+        layer.style.setProperty('--drift', progress.toFixed(4));
+      };
+      addEventListener(
+        'scroll',
+        () => {
+          if (!driftFrame) driftFrame = requestAnimationFrame(drift);
+        },
+        { passive: true, signal: this.listeners.signal },
+      );
+      drift();
+
       const requestedSeed = Number(
         new URLSearchParams(location.search).get('seed'),
       );
@@ -118,7 +196,9 @@ import Icon from './Icon.astro';
 
     disconnectedCallback() {
       this.disposed = true;
+      this.listeners.abort();
       this.renderer?.remove();
+      if (this.snapshotUrl) URL.revokeObjectURL(this.snapshotUrl);
     }
   }
 

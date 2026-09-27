@@ -31,12 +31,13 @@ const contents = headings.filter((heading) => heading.depth <= 3);
   article
   publishedAt={post.data.pubDate}
 >
+  <div class="reading-progress" aria-hidden="true"></div>
   <main id="main" class="container article-page">
     <a href="/blog/" class="text-link back-link">
       <Icon name="back" size={17} />
       返回博客
     </a>
-    <header class="article-header">
+    <header class="article-header" data-reveal>
       <div class="post-meta">
         <time datetime={post.data.pubDate.toISOString()}>
           {formatDate(post.data.pubDate)}
@@ -84,3 +85,42 @@ const contents = headings.filter((heading) => heading.depth <= 3);
     </div>
   </main>
 </BaseLayout>
+
+<script>
+  // Mark the section being read so the contents double as a quiet position marker.
+  const links = [
+    ...document.querySelectorAll<HTMLAnchorElement>('.toc a[href^="#"]'),
+  ];
+  const targets = links
+    .map((link) =>
+      document.getElementById(decodeURIComponent(link.hash.slice(1))),
+    )
+    .filter((target): target is HTMLElement => target !== null);
+  if (targets.length && 'IntersectionObserver' in window) {
+    const visible = new Set<Element>();
+    const update = () => {
+      const current =
+        targets.find((target) => visible.has(target)) ??
+        [...targets]
+          .reverse()
+          .find((target) => target.getBoundingClientRect().top < 0);
+      for (const link of links)
+        link.classList.toggle(
+          'is-active',
+          current !== undefined &&
+            decodeURIComponent(link.hash.slice(1)) === current.id,
+        );
+    };
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting) visible.add(entry.target);
+          else visible.delete(entry.target);
+        }
+        update();
+      },
+      { rootMargin: '0px 0px -55% 0px' },
+    );
+    targets.forEach((target) => observer.observe(target));
+  }
+</script>
