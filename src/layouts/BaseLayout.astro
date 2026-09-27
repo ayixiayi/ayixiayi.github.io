@@ -62,6 +62,9 @@ const fullTitle = title === site.name ? site.name : `${title} — ${site.name}`;
     )}
     <meta name="twitter:card" content="summary_large_image" />
     <title>{fullTitle}</title>
+    <script is:inline>
+      document.documentElement.classList.add('js');
+    </script>
   </head>
   <body>
     <a class="skip-link" href="#main">
@@ -100,5 +103,37 @@ const fullTitle = title === site.name ? site.name : `${title} — ${site.name}`;
         </a>
       </div>
     </footer>
+    <script is:inline>
+      // Content is revealed as it enters view; settled elements drop the mask so
+      // focus rings and glyph overhangs are never clipped.
+      (() => {
+        const items = document.querySelectorAll('[data-reveal]');
+        const settle = (item) => {
+          item.classList.add('is-revealed');
+          const delay = parseFloat(
+            getComputedStyle(item).getPropertyValue('--reveal-delay') || '0',
+          );
+          setTimeout(() => item.classList.add('is-settled'), 1500 + delay);
+        };
+        if (
+          !('IntersectionObserver' in window) ||
+          matchMedia('(prefers-reduced-motion: reduce)').matches
+        ) {
+          items.forEach(settle);
+          return;
+        }
+        const observer = new IntersectionObserver(
+          (entries) => {
+            for (const entry of entries) {
+              if (!entry.isIntersecting) continue;
+              observer.unobserve(entry.target);
+              settle(entry.target);
+            }
+          },
+          { rootMargin: '0px 0px -6% 0px', threshold: 0.08 },
+        );
+        items.forEach((item) => observer.observe(item));
+      })();
+    </script>
   </body>
 </html>

@@ -6,13 +6,13 @@ import { projects } from '../data/site';
 
 <BaseLayout title="项目" description="ayixiayi 的项目列表。">
   <main id="main" class="container projects-page">
-    <header class="page-header">
+    <header class="page-header" data-reveal>
       <h1>项目</h1>
       <p>做过的和在做的东西。</p>
     </header>
     <div class="project-grid">
-      {projects.map((project) => (
-        <ProjectCard project={project} />
+      {projects.map((project, index) => (
+        <ProjectCard project={project} index={index} />
       ))}
     </div>
   </main>

@@ -1,18 +1,26 @@
 :root {
   color-scheme: dark;
   --bg: #11181c;
+  --bg-deep: #0c1215;
   --surface: #192329;
   --surface-raised: #253139;
   --text: #dce1e3;
   --text-muted: #aab4ba;
   --accent: #c3ad82;
+  --accent-soft: rgb(195 173 130 / 32%);
   --border: #344047;
+  --hairline: rgb(170 180 186 / 14%);
   --font-sans:
     'Manrope Variable', 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC',
     sans-serif;
   --font-display: 'Instrument Serif', Georgia, 'Noto Serif CJK SC', serif;
   --font-mono: 'IBM Plex Mono', monospace;
   --content-width: 1080px;
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  /* A soft-edged veil: sliding it upward reads like mist lifting off the page. */
+  --veil: linear-gradient(180deg, #000 42%, transparent 58%);
+  --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 1.1 -.45'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 }
 
 * {
@@ -29,6 +37,7 @@ figure {
 html {
   scroll-behavior: smooth;
   scroll-padding-top: 28px;
+  scrollbar-color: #2e3a41 var(--bg);
 }
 body {
   background: var(--bg);
@@ -37,6 +46,29 @@ body {
   line-height: 1.75;
   min-width: 320px;
   -webkit-font-smoothing: antialiased;
+}
+/* Cold ambient light and a faint canvas tooth sit beneath every page. */
+body::before,
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+}
+body::before {
+  background:
+    radial-gradient(
+      1100px 520px at 72% -8%,
+      rgb(126 150 160 / 9%),
+      transparent 70%
+    ),
+    radial-gradient(900px 600px at 0% 110%, rgb(8 12 15 / 55%), transparent);
+}
+body::after {
+  background: var(--grain);
+  background-size: 180px;
+  opacity: 0.05;
 }
 body:has(dialog[open]) {
   overflow: hidden;
@@ -102,6 +134,8 @@ button {
   top: 12px;
 }
 
+/* Header ---------------------------------------------------------------- */
+
 .site-header {
   max-width: 1280px;
   min-height: 84px;
@@ -111,6 +145,7 @@ button {
   grid-template-columns: 1fr auto 1fr;
   align-items: center;
   gap: 36px;
+  view-transition-name: site-header;
 }
 .wordmark {
   display: flex;
@@ -122,7 +157,15 @@ button {
   width: fit-content;
 }
 .signature-dot {
+  display: inline-block;
   color: var(--accent);
+  transition:
+    translate 500ms var(--ease-out),
+    text-shadow 500ms ease;
+}
+.wordmark:hover .signature-dot {
+  translate: 0 -3px;
+  text-shadow: 0 0 14px var(--accent-soft);
 }
 .nav-links {
   display: flex;
@@ -133,6 +176,25 @@ button {
   font-size: 14px;
   color: var(--text-muted);
   position: relative;
+  transition: color 300ms ease;
+}
+.nav-links a::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 7px;
+  height: 1px;
+  background: var(--text-muted);
+  opacity: 0.5;
+  transform: scaleX(0);
+  transition: transform 500ms var(--ease-out);
+}
+.nav-links a:hover::before {
+  transform: scaleX(1);
+}
+.nav-links a[aria-current]::before {
+  display: none;
 }
 .nav-links a:hover,
 .nav-links a[aria-current] {
@@ -153,6 +215,8 @@ button {
   align-items: center;
   color: var(--text-muted);
 }
+
+/* Layout ---------------------------------------------------------------- */
 
 .container,
 .home-content,
@@ -178,6 +242,16 @@ button {
   margin-top: 12px;
   font-size: 15px;
 }
+.page-header::before {
+  content: '';
+  display: block;
+  width: 36px;
+  height: 1px;
+  margin-bottom: 26px;
+  background: var(--accent);
+  transform-origin: left;
+  transition: transform 1.4s var(--ease-out) 300ms;
+}
 .text-link {
   display: inline-flex;
   align-items: center;
@@ -185,10 +259,24 @@ button {
   font-size: 13px;
   color: var(--text-muted);
   min-height: 36px;
+  transition: color 300ms ease;
+}
+.text-link svg {
+  transition: translate 450ms var(--ease-out);
 }
 .text-link:hover {
   color: var(--accent);
 }
+.text-link:hover svg {
+  translate: 4px 0;
+}
+.back-link:hover svg,
+.page-end .text-link:first-child:hover svg {
+  translate: -4px 0;
+}
+
+/* Hero painting --------------------------------------------------------- */
+
 .hero {
   width: min(1240px, calc(100% - 48px));
   margin-inline: auto;
@@ -203,6 +291,10 @@ generative-landscape {
   background: #34464a;
   aspect-ratio: 8 / 5;
 }
+.landscape-layer {
+  position: absolute;
+  inset: 0;
+}
 .landscape-surface img,
 [data-canvas-host],
 [data-canvas-host] canvas {
@@ -216,31 +308,95 @@ generative-landscape {
 }
 [data-canvas-host] {
   opacity: 0;
+  transition: opacity 1.8s var(--ease-out);
 }
-generative-landscape[data-state='ready'] [data-canvas-host] {
+[data-art-fallback] {
+  transition: opacity 900ms ease 300ms;
+}
+generative-landscape[data-state='loading'] [data-canvas-host] {
+  transition: none;
+}
+generative-landscape:is([data-state='painting'], [data-state='ready'])
+  [data-canvas-host] {
   opacity: 1;
 }
 generative-landscape[data-state='ready'] [data-art-fallback] {
   opacity: 0;
 }
-.hero .landscape-surface {
-  aspect-ratio: auto;
-  height: clamp(400px, 37vw, 530px);
-}
-.hero .landscape-surface::after {
+/* Canvas weave and grain are glazed over the paint, never baked into it. */
+.landscape-surface::before {
   content: '';
   position: absolute;
   inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background:
+    var(--grain),
+    repeating-linear-gradient(
+      0deg,
+      rgb(255 255 255 / 3%) 0 1px,
+      transparent 1px 3px
+    ),
+    repeating-linear-gradient(90deg, rgb(0 0 0 / 5%) 0 1px, transparent 1px 3px);
+  background-size:
+    180px 180px,
+    auto,
+    auto;
+  mix-blend-mode: overlay;
+  opacity: 0.55;
+  transition: opacity 1.2s ease;
+}
+.landscape-surface::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  box-shadow:
+    inset 0 0 0 1px rgb(255 255 255 / 5%),
+    inset 0 0 140px rgb(6 10 12 / 40%);
+}
+.landscape-glaze {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background: radial-gradient(
+    circle 440px at var(--light-x, 68%) var(--light-y, 32%),
+    rgb(255 238 206 / 22%),
+    transparent 72%
+  );
+  mix-blend-mode: soft-light;
+  opacity: 0;
+  transition: opacity 1.4s ease;
+}
+generative-landscape:hover .landscape-glaze {
+  opacity: 1;
+}
+/* Blended glazes would be recomposited on every stroke, so they wait for the
+   painting to finish. */
+generative-landscape:is([data-state='loading'], [data-state='painting'])
+  .landscape-surface::before,
+generative-landscape:is([data-state='loading'], [data-state='painting'])
+  .landscape-glaze {
+  opacity: 0;
+  transition: none;
+}
+.hero .landscape-surface {
+  aspect-ratio: auto;
+  height: clamp(400px, 37vw, 530px);
+  box-shadow: 0 50px 90px -60px rgb(0 0 0 / 90%);
+}
+.hero .landscape-surface::after {
   background:
     linear-gradient(90deg, #10181f80 0%, #10181f30 38%, transparent 60%),
     linear-gradient(0deg, #11181c40, transparent 45%);
-  pointer-events: none;
 }
 .hero-copy {
   position: absolute;
   top: 29%;
   left: 6.5%;
-  z-index: 1;
+  z-index: 3;
 }
 .hero-copy h1 {
   display: flex;
@@ -252,27 +408,75 @@ generative-landscape[data-state='ready'] [data-art-fallback] {
   letter-spacing: -0.04em;
   margin: 0 0 22px -2px;
   color: #edf0f2;
+  text-shadow: 0 2px 30px rgb(8 14 18 / 35%);
 }
 .hero-subtitle {
+  display: flex;
+  align-items: center;
+  gap: 12px;
   color: #e1e7eb;
   font-size: 15px;
   letter-spacing: 0.025em;
+}
+.hero-subtitle::before {
+  content: '';
+  width: 22px;
+  height: 1px;
+  background: var(--accent);
 }
 .hero-description {
   color: #c5d0d8;
   font-size: 14px;
   margin-top: 2px;
+  padding-left: 34px;
 }
 .landscape-caption {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 7px 0;
   gap: 16px;
 }
+.art-progress {
+  position: absolute;
+  inset: 0 0 auto;
+  height: 1px;
+  background: var(--hairline);
+  opacity: 0;
+  transition: opacity 700ms ease;
+}
+.art-progress span {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, var(--accent));
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 200ms linear;
+}
+generative-landscape:is([data-state='loading'], [data-state='painting'])
+  .art-progress {
+  opacity: 1;
+}
 .art-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
   font: 12px var(--font-mono);
   color: var(--text-muted);
+  letter-spacing: 0.04em;
+}
+.art-status::before {
+  content: '';
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--accent);
+  opacity: 0.8;
+}
+generative-landscape:is([data-state='loading'], [data-state='painting'])
+  .art-status::before {
+  animation: breathe 1.6s ease-in-out infinite;
 }
 .landscape-caption button {
   display: inline-flex;
@@ -283,10 +487,19 @@ generative-landscape[data-state='ready'] [data-art-fallback] {
   font-size: 12px;
   color: var(--text-muted);
   white-space: nowrap;
+  transition: color 300ms ease;
+}
+.landscape-caption button svg {
+  transition: rotate 700ms var(--ease-out);
 }
 .landscape-caption button:hover {
   color: var(--accent);
 }
+.landscape-caption button:hover svg {
+  rotate: 180deg;
+}
+
+/* Home sections --------------------------------------------------------- */
 
 .home-section {
   padding-top: 48px;
@@ -296,19 +509,36 @@ generative-landscape[data-state='ready'] [data-art-fallback] {
 }
 .section-heading {
   display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 20px;
+  align-items: baseline;
+  gap: 18px;
   margin-bottom: 30px;
+}
+.section-index {
+  font: 11px var(--font-mono);
+  letter-spacing: 0.12em;
+  color: var(--accent);
 }
 .section-heading h2 {
   font-size: 24px;
   font-weight: 500;
   letter-spacing: -0.025em;
 }
+.section-rule {
+  flex: 1;
+  align-self: center;
+  height: 1px;
+  margin-inline: 8px 4px;
+  background: linear-gradient(90deg, var(--border), transparent 90%);
+  transform-origin: left;
+  transition: transform 1.6s var(--ease-out) 250ms;
+}
 .section-heading .text-link {
   font-size: 12px;
+  align-self: center;
 }
+
+/* Project cards --------------------------------------------------------- */
+
 .project-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -317,8 +547,11 @@ generative-landscape[data-state='ready'] [data-art-fallback] {
 .project-card {
   display: block;
   min-width: 0;
+  --glow: 145 178 168;
 }
 .project-visual {
+  position: relative;
+  isolation: isolate;
   height: 132px;
   margin-bottom: 22px;
   overflow: hidden;
@@ -326,14 +559,42 @@ generative-landscape[data-state='ready'] [data-art-fallback] {
   border-radius: 3px;
   background: #19272b;
   color: #91aaa3;
-  transition: border-color 160ms ease;
+  transition:
+    border-color 500ms ease,
+    color 500ms ease;
+}
+.project-visual::before,
+.project-visual::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+}
+.project-visual::before {
+  background: radial-gradient(
+    120% 100% at 72% -10%,
+    rgb(var(--glow) / 16%),
+    transparent 62%
+  );
+  opacity: 0.6;
+  transition:
+    opacity 900ms ease,
+    transform 1.4s var(--ease-out);
+}
+.project-visual::after {
+  background: var(--grain);
+  background-size: 180px;
+  opacity: 0.08;
 }
 .project-visual.music {
+  --glow: 144 163 188;
   background: #1d2732;
   border-color: #364454;
   color: #90a3bc;
 }
 .project-visual.orchestration {
+  --glow: 195 173 130;
   background: #252a29;
   border-color: #6f6857;
   color: var(--accent);
@@ -345,22 +606,66 @@ generative-landscape[data-state='ready'] [data-art-fallback] {
   stroke: currentColor;
   stroke-width: 1;
   stroke-linejoin: round;
+  transition: scale 1.2s var(--ease-out);
+}
+.project-visual svg g {
+  transition:
+    translate 1.1s var(--ease-out),
+    rotate 1.6s var(--ease-out);
+}
+.motif-disc {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+.motif-arm {
+  transform-origin: 234px 22px;
 }
 .project-card:is(:hover, :focus-visible) .project-visual {
   border-color: var(--accent);
+}
+.project-card:is(:hover, :focus-visible) .project-visual::before {
+  opacity: 1;
+  transform: translateX(-6%);
+}
+.project-card:is(:hover, :focus-visible) .project-visual svg {
+  scale: 1.035;
+}
+.project-card:is(:hover, :focus-visible) .motif-rise {
+  translate: 0 -5px;
+}
+.project-card:is(:hover, :focus-visible) .motif-sink {
+  translate: 0 4px;
+}
+.project-card:is(:hover, :focus-visible) .motif-disc {
+  rotate: 150deg;
+}
+.project-card:is(:hover, :focus-visible) .motif-arm {
+  rotate: 7deg;
+}
+.project-card:is(:hover, :focus-visible) .motif-flow {
+  animation: flow 1.4s linear infinite;
 }
 .project-card h3 {
   font-size: 16px;
   margin: 0 0 12px;
   font-weight: 500;
   overflow-wrap: anywhere;
+  transition: color 300ms ease;
 }
-.project-card h3 svg {
+.card-icon {
+  display: inline-block;
   margin-left: 6px;
   color: var(--text-muted);
+  transition:
+    translate 450ms var(--ease-out),
+    color 300ms ease;
 }
 .project-card:hover h3 {
   color: var(--accent);
+}
+.project-card:hover .card-icon {
+  color: var(--accent);
+  translate: 2px -2px;
 }
 .project-card > p {
   font-size: 14px;
@@ -398,10 +703,14 @@ generative-landscape[data-state='ready'] [data-art-fallback] {
   color: var(--accent);
   font-family: var(--font-mono);
 }
+
+/* Post rows ------------------------------------------------------------- */
+
 .writing-section {
   padding-top: 60px;
 }
 .post-row {
+  position: relative;
   display: grid;
   grid-template-columns: 115px 1fr auto 24px;
   align-items: center;
@@ -412,6 +721,21 @@ generative-landscape[data-state='ready'] [data-art-fallback] {
 .post-row + .post-row {
   border-top: 0;
 }
+.post-row::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -1px;
+  height: 1px;
+  background: linear-gradient(90deg, var(--accent), var(--accent-soft));
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 800ms var(--ease-out);
+}
+.post-row:hover::after {
+  transform: scaleX(1);
+}
 .post-row time,
 .reading-time {
   font: 11px var(--font-mono);
@@ -421,12 +745,22 @@ generative-landscape[data-state='ready'] [data-art-fallback] {
 .post-row h3 {
   font-size: 16px;
   font-weight: 500;
+  transition:
+    color 300ms ease,
+    translate 600ms var(--ease-out);
 }
-.post-row > svg {
+.post-arrow {
+  display: inline-flex;
   color: var(--accent);
+  transition: translate 500ms var(--ease-out);
 }
 .post-row:hover h3 {
   color: var(--accent);
+  translate: 6px 0;
+}
+.post-row:hover .post-arrow,
+.blog-entry h3 a:hover .post-arrow {
+  translate: 3px -3px;
 }
 .page-end {
   margin-top: 70px;
@@ -439,6 +773,8 @@ generative-landscape[data-state='ready'] [data-art-fallback] {
   color: var(--text-muted);
   font-size: 13px;
 }
+
+/* Footer ---------------------------------------------------------------- */
 
 .site-footer {
   border-top: 1px solid var(--border);
@@ -459,6 +795,7 @@ generative-landscape[data-state='ready'] [data-art-fallback] {
   display: flex;
   align-items: center;
   gap: 7px;
+  transition: color 300ms ease;
 }
 .footer-links a:hover {
   color: var(--accent);
@@ -468,6 +805,8 @@ generative-landscape[data-state='ready'] [data-art-fallback] {
   font-family: var(--font-mono);
   font-size: 12px;
 }
+
+/* Blog ------------------------------------------------------------------ */
 
 .blog-page {
   max-width: 980px;
@@ -484,7 +823,14 @@ generative-landscape[data-state='ready'] [data-art-fallback] {
   padding: 36px 0;
 }
 .year-label {
-  font: 18px var(--font-mono);
+  position: sticky;
+  top: 32px;
+  align-self: start;
+  font-family: var(--font-display);
+  font-size: 40px;
+  font-weight: 400;
+  line-height: 1;
+  letter-spacing: -0.02em;
   color: var(--text-muted);
 }
 .post-meta {
@@ -511,16 +857,20 @@ generative-landscape[data-state='ready'] [data-art-fallback] {
   display: flex;
   align-items: baseline;
   gap: 20px;
+  transition: color 300ms ease;
 }
 .blog-entry h3 a:hover {
-  color: var(--accent);
-}
-.blog-entry h3 svg {
   color: var(--accent);
 }
 .blog-entry > p {
   color: var(--text-muted);
   font-size: 14px;
+}
+
+/* Article --------------------------------------------------------------- */
+
+.reading-progress {
+  display: none;
 }
 .back-link {
   margin-bottom: 34px;
@@ -563,6 +913,15 @@ generative-landscape[data-state='ready'] [data-art-fallback] {
 .prose :is(h1, h2) {
   font-size: 24px;
 }
+.prose h2::before {
+  content: '';
+  display: inline-block;
+  width: 14px;
+  height: 1px;
+  margin-right: 14px;
+  vertical-align: middle;
+  background: var(--accent);
+}
 .prose h3 {
   font-size: 20px;
 }
@@ -579,14 +938,22 @@ generative-landscape[data-state='ready'] [data-art-fallback] {
 .prose li {
   margin-bottom: 0.5em;
 }
+.prose li::marker {
+  color: var(--accent);
+}
 .prose a {
   color: var(--accent);
   text-decoration: underline;
   text-decoration-color: var(--text-muted);
+  text-decoration-thickness: 1px;
   text-underline-offset: 4px;
+  transition:
+    text-decoration-color 300ms ease,
+    text-underline-offset 300ms ease;
 }
 .prose a:hover {
   text-decoration-color: var(--accent);
+  text-underline-offset: 6px;
 }
 .prose strong {
   font-weight: 650;
@@ -606,6 +973,7 @@ generative-landscape[data-state='ready'] [data-art-fallback] {
   overflow: auto;
   font-size: 13px;
   line-height: 1.7;
+  background: rgb(12 18 21 / 60%);
 }
 .prose pre code {
   background: transparent;
@@ -615,6 +983,7 @@ generative-landscape[data-state='ready'] [data-art-fallback] {
   margin: 1.5em 0;
   padding: 5px 22px;
   border-left: 2px solid var(--accent);
+  background: linear-gradient(90deg, rgb(195 173 130 / 5%), transparent 70%);
   color: var(--text-muted);
 }
 .prose blockquote p:last-child {
@@ -635,7 +1004,8 @@ generative-landscape[data-state='ready'] [data-art-fallback] {
 }
 .prose hr {
   border: 0;
-  border-top: 1px solid var(--border);
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--border), transparent);
   margin-block: 40px;
 }
 .toc {
@@ -654,6 +1024,7 @@ generative-landscape[data-state='ready'] [data-art-fallback] {
   margin: 18px 0;
 }
 .toc li {
+  position: relative;
   margin-bottom: 12px;
   color: var(--text-muted);
   font-size: 13px;
@@ -661,13 +1032,19 @@ generative-landscape[data-state='ready'] [data-art-fallback] {
 .toc li.nested {
   padding-left: 12px;
 }
-.toc a:hover {
+.toc a {
+  transition: color 300ms ease;
+}
+.toc a:hover,
+.toc a.is-active {
   color: var(--accent);
 }
 .toc > .text-link {
   font-size: 11px;
   margin-top: 10px;
 }
+
+/* About ----------------------------------------------------------------- */
 
 .about-grid {
   display: grid;
@@ -676,21 +1053,73 @@ generative-landscape[data-state='ready'] [data-art-fallback] {
   align-items: start;
 }
 .about-illustration {
+  position: relative;
   width: 100%;
   max-width: 300px;
   aspect-ratio: 15 / 17;
   overflow: hidden;
   border: 1px solid var(--border);
   border-radius: 150px 150px 2px 2px;
+  box-shadow:
+    0 0 0 7px var(--bg),
+    0 0 0 8px var(--hairline),
+    0 40px 70px -40px rgb(0 0 0 / 80%);
+}
+.about-illustration::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: var(--grain);
+  background-size: 180px;
+  mix-blend-mode: overlay;
+  opacity: 0.45;
+  box-shadow: inset 0 0 60px rgb(6 10 12 / 45%);
 }
 .about-illustration img {
   width: 100%;
   height: 100%;
   object-fit: cover;
   object-position: 76% center;
+  transition: scale 2.4s var(--ease-out);
 }
+.about-illustration:hover img {
+  scale: 1.05;
+}
+
+/* 404 ------------------------------------------------------------------- */
+
 .not-found {
   padding-block: 55px 90px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr);
+  align-items: center;
+  gap: clamp(40px, 7vw, 96px);
+}
+.not-found-copy {
+  grid-area: 1 / 1;
+}
+.not-found-art {
+  position: relative;
+  grid-area: 1 / 2;
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 2px;
+}
+.not-found-art img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 70% 40%;
+  filter: saturate(0.7) brightness(0.8);
+  animation: drift-slow 40s ease-in-out infinite alternate;
+}
+.not-found-art::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(0deg, rgb(17 24 28 / 70%), transparent 60%);
 }
 .not-found small {
   font: 14px var(--font-mono);
@@ -700,6 +1129,218 @@ generative-landscape[data-state='ready'] [data-art-fallback] {
   font-size: 28px;
   font-weight: 500;
   margin-block: 14px 24px;
+}
+
+/* Motion ---------------------------------------------------------------- */
+
+@keyframes breathe {
+  50% {
+    opacity: 0.2;
+  }
+}
+@keyframes trace {
+  from {
+    stroke-dashoffset: 1;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+@keyframes flow {
+  to {
+    stroke-dashoffset: -14;
+  }
+}
+@keyframes drift-slow {
+  from {
+    scale: 1.02;
+    translate: 0 0;
+  }
+  to {
+    scale: 1.1;
+    translate: -3% -2%;
+  }
+}
+/* The poster develops like a photograph in a tray: dim, soft, then settled. */
+@keyframes develop {
+  from {
+    opacity: 0;
+    scale: 1.06;
+    filter: saturate(0.3) brightness(0.55);
+  }
+  55% {
+    filter: saturate(0.75) brightness(0.85);
+  }
+  to {
+    opacity: 1;
+    scale: 1;
+    filter: none;
+  }
+}
+@keyframes unveil {
+  from {
+    -webkit-mask-image: var(--veil);
+    mask-image: var(--veil);
+    -webkit-mask-size: 100% 260%;
+    mask-size: 100% 260%;
+    -webkit-mask-position: 0 100%;
+    mask-position: 0 100%;
+    translate: 0 0.35em;
+  }
+  to {
+    -webkit-mask-image: var(--veil);
+    mask-image: var(--veil);
+    -webkit-mask-size: 100% 260%;
+    mask-size: 100% 260%;
+    -webkit-mask-position: 0 0;
+    mask-position: 0 0;
+    translate: 0 0;
+  }
+}
+@keyframes settle {
+  from {
+    letter-spacing: 0.03em;
+  }
+}
+@keyframes dot-in {
+  from {
+    scale: 0;
+  }
+  60% {
+    scale: 1.5;
+    text-shadow: 0 0 18px var(--accent);
+  }
+  to {
+    scale: 1;
+  }
+}
+@keyframes progress {
+  to {
+    transform: scaleX(1);
+  }
+}
+@keyframes page-out {
+  to {
+    opacity: 0;
+    translate: 0 -6px;
+  }
+}
+@keyframes page-in {
+  from {
+    opacity: 0;
+    translate: 0 10px;
+  }
+}
+
+@view-transition {
+  navigation: auto;
+}
+::view-transition-old(root) {
+  animation: page-out 260ms var(--ease-in-out) both;
+}
+::view-transition-new(root) {
+  animation: page-in 520ms var(--ease-out) 80ms both;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .hero [data-art-fallback] {
+    animation: develop 2.6s var(--ease-out) backwards;
+  }
+  .hero-copy h1 {
+    animation:
+      unveil 1.5s var(--ease-out) 0.45s backwards,
+      settle 2.4s var(--ease-out) 0.45s backwards;
+  }
+  .hero-copy .signature-dot {
+    animation: dot-in 900ms var(--ease-out) 1.5s backwards;
+  }
+  .hero-subtitle {
+    animation: unveil 1.3s var(--ease-out) 0.8s backwards;
+  }
+  .hero-description {
+    animation: unveil 1.3s var(--ease-out) 0.95s backwards;
+  }
+  .hero .landscape-caption {
+    animation: unveil 1.2s var(--ease-out) 1.2s backwards;
+  }
+
+  /* Scroll reveals: the veil is only drawn once scripting can lift it. */
+  .js [data-reveal]:not(.is-settled) {
+    -webkit-mask-image: var(--veil);
+    mask-image: var(--veil);
+    -webkit-mask-size: 100% 260%;
+    mask-size: 100% 260%;
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
+    -webkit-mask-position: 0 100%;
+    mask-position: 0 100%;
+    translate: 0 16px;
+    transition:
+      -webkit-mask-position 1.3s var(--ease-out) var(--reveal-delay, 0ms),
+      mask-position 1.3s var(--ease-out) var(--reveal-delay, 0ms),
+      translate 1.1s var(--ease-out) var(--reveal-delay, 0ms);
+  }
+  .js [data-reveal].is-revealed {
+    -webkit-mask-position: 0 0;
+    mask-position: 0 0;
+    translate: 0 0;
+  }
+  .js [data-reveal]:not(.is-revealed) .section-rule,
+  .js .page-header[data-reveal]:not(.is-revealed)::before {
+    transform: scaleX(0);
+  }
+
+  /* Line drawings are traced in once their card arrives. */
+  .js .project-card .trace {
+    stroke-dasharray: 1;
+  }
+  .js .project-card:not(.is-revealed) .trace {
+    stroke-dashoffset: 1;
+  }
+  .js .project-card.is-revealed .trace {
+    animation: trace 2.2s var(--ease-in-out)
+      calc(var(--reveal-delay, 0ms) + 250ms) backwards;
+  }
+
+  @supports (animation-timeline: scroll()) {
+    .reading-progress {
+      display: block;
+      position: fixed;
+      inset: 0 0 auto;
+      z-index: 50;
+      height: 2px;
+      background: linear-gradient(90deg, var(--accent-soft), var(--accent));
+      transform: scaleX(0);
+      transform-origin: left;
+      animation: progress linear both;
+      animation-timeline: scroll(root);
+    }
+  }
+}
+
+@media (min-width: 801px) and (prefers-reduced-motion: no-preference) {
+  /* The painting sinks slightly slower than the page, like a window view. */
+  .hero .landscape-layer {
+    inset: -6% 0;
+    translate: 0 calc(var(--drift, 0) * 5%);
+  }
+}
+
+@media (min-width: 641px) {
+  .toc li::before {
+    content: '';
+    position: absolute;
+    left: -25px;
+    top: 0.3em;
+    bottom: 0.3em;
+    width: 1px;
+    background: var(--accent);
+    transform: scaleY(0);
+    transition: transform 500ms var(--ease-out);
+  }
+  .toc li:has(> a.is-active)::before {
+    transform: scaleY(1);
+  }
 }
 
 @media (max-width: 1000px) {
@@ -729,10 +1370,18 @@ generative-landscape[data-state='ready'] [data-art-fallback] {
 @media (max-width: 800px) {
   .about-grid {
     grid-template-columns: 1fr;
-    gap: 32px;
+    gap: 40px;
   }
   .about-illustration {
     justify-self: center;
+  }
+  .not-found {
+    grid-template-columns: 1fr;
+    gap: 36px;
+  }
+  .not-found-art {
+    grid-area: 2 / 1;
+    aspect-ratio: 16 / 9;
   }
 }
 
@@ -755,6 +1404,9 @@ generative-landscape[data-state='ready'] [data-art-fallback] {
   }
   .nav-links a[aria-current]::after {
     bottom: 0;
+  }
+  .nav-links a::before {
+    bottom: 3px;
   }
   .container,
   .home-content,
@@ -805,9 +1457,13 @@ generative-landscape[data-state='ready'] [data-art-fallback] {
   }
   .section-heading {
     margin-bottom: 24px;
+    gap: 12px;
   }
   .section-heading h2 {
     font-size: 22px;
+  }
+  .section-rule {
+    margin-inline: 4px 0;
   }
   .section-heading .text-link {
     gap: 8px;
@@ -848,11 +1504,16 @@ generative-landscape[data-state='ready'] [data-art-fallback] {
   .page-header > p {
     font-size: 14px;
   }
+  .page-header::before {
+    margin-bottom: 20px;
+  }
   .blog-year {
     display: block;
     padding-block: 24px;
   }
   .year-label {
+    position: static;
+    font-size: 32px;
     margin-bottom: 24px;
   }
   .blog-entry h3 {
@@ -909,5 +1570,8 @@ generative-landscape[data-state='ready'] [data-art-fallback] {
   *::after {
     transition: none !important;
     animation: none !important;
+  }
+  @view-transition {
+    navigation: none;
   }
 }

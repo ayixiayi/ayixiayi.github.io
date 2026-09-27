@@ -17,7 +17,7 @@ const years = [
 
 <BaseLayout title="博客" description="ayixiayi 的文章列表。">
   <main id="main" class="container blog-page">
-    <header class="page-header">
+    <header class="page-header" data-reveal>
       <h1>博客</h1>
       <p>学到的和想到的。</p>
       <a href="/rss.xml" class="text-link rss-link">
@@ -31,8 +31,12 @@ const years = [
         <div>
           {posts
             .filter((post) => post.data.pubDate.getUTCFullYear() === year)
-            .map((post) => (
-              <article class="blog-entry">
+            .map((post, index) => (
+              <article
+                class="blog-entry"
+                data-reveal
+                style={`--reveal-delay: ${Math.min(index, 4) * 90}ms`}
+              >
                 <div class="post-meta">
                   <time datetime={post.data.pubDate.toISOString()}>
                     {formatDate(post.data.pubDate)}
@@ -42,7 +46,9 @@ const years = [
                 <h3>
                   <a href={postUrl(post.id)}>
                     {post.data.title}
-                    <Icon name="external" size={22} />
+                    <span class="post-arrow">
+                      <Icon name="external" size={22} />
+                    </span>
                   </a>
                 </h3>
                 <p>{post.data.description}</p>

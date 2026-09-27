@@ -6,6 +6,7 @@ type LandscapeOptions = {
   seed: number;
   width: number;
   height: number;
+  onProgress?: (done: number) => void;
   onComplete?: () => void;
 };
 
@@ -294,6 +295,7 @@ export function createLandscapeSketch(
         jobs[cursor++]();
       } while (cursor < jobs.length && performance.now() - started < 11);
       p.pop();
+      options.onProgress?.(cursor / jobs.length);
       if (cursor === jobs.length) {
         p.noLoop();
         options.onComplete?.();
