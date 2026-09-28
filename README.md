@@ -36,7 +36,7 @@ npm run dev
 - 搜索索引在构建时生成到 `/search-index.json`，包含已发布文章的标题、描述、标签、正文，以及项目资料；搜索在浏览器内执行。
 - `/rss.xml` 提供已发布文章订阅，sitemap 由 Astro 集成生成。
 - 文章页面从 Markdown 标题生成目录（TOC），并显示发布日期、标签和估算阅读时间。
-- Instrument Serif、Manrope 和 IBM Plex Mono 通过 Fontsource 随构建产物自托管，不依赖 Google Fonts 在线加载；中文使用系统字体回退。
+- Instrument Serif、Noto Serif SC、Manrope 和 IBM Plex Mono 通过 Fontsource 随构建产物自托管，不依赖 Google Fonts 在线加载。Noto Serif SC 用于中文标题，按 unicode-range 分片，浏览器只下载页面实际用到的字符；中文正文使用系统无衬线字体。
 - 页面不加载不蒜子（Busuanzi）统计，不展示访问量。
 
 ## 发布文章

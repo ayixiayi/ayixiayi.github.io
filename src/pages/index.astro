@@ -19,10 +19,13 @@ const posts = (await getPublishedPosts()).slice(0, 3);
     <section class="hero" aria-labelledby="intro-title">
       <GenerativeLandscape>
         <div class="hero-copy">
-          <h1 id="intro-title">
-            ayixiayi
-            <span class="signature-dot" aria-hidden="true">
-              .
+          <h1 id="intro-title" class="hero-title">
+            <span class="sr-only">ayixiayi</span>
+            <span class="hero-letters" aria-hidden="true">
+              {[...'ayixiayi'].map((letter, index) => (
+                <span style={`--i: ${index}`}>{letter}</span>
+              ))}
+              <span class="signature-dot">.</span>
             </span>
           </h1>
           <p class="hero-subtitle">SJTU 自动化 · Sophomore</p>
@@ -31,59 +34,56 @@ const posts = (await getPublishedPosts()).slice(0, 3);
       </GenerativeLandscape>
     </section>
 
-    <div class="home-content">
-      <section class="home-section" aria-labelledby="projects-title">
-        <div class="section-heading" data-reveal>
-          <span class="section-index" aria-hidden="true">
-            01
+    <div class="catalogue">
+      <section class="plate" aria-labelledby="projects-title">
+        <header class="plate-head" data-reveal>
+          <span class="plate-no" aria-hidden="true">
+            I
           </span>
           <h2 id="projects-title">项目</h2>
-          <span class="section-rule" aria-hidden="true"></span>
-          <a href="/projects/" class="text-link">
+          <a href="/projects/" class="plate-link">
             全部项目 <Icon name="arrow" size={16} />
           </a>
-        </div>
-        <div class="project-grid">
+        </header>
+        <div class="work-list">
           {projects.map((project, index) => (
             <ProjectCard project={project} index={index} />
           ))}
         </div>
       </section>
 
-      <section
-        class="home-section writing-section"
-        aria-labelledby="writing-title"
-      >
-        <div class="section-heading" data-reveal>
-          <span class="section-index" aria-hidden="true">
-            02
+      <section class="plate" aria-labelledby="writing-title">
+        <header class="plate-head" data-reveal>
+          <span class="plate-no" aria-hidden="true">
+            II
           </span>
           <h2 id="writing-title">博客</h2>
-          <span class="section-rule" aria-hidden="true"></span>
-          <a href="/blog/" class="text-link">
+          <a href="/blog/" class="plate-link">
             全部文章 <Icon name="arrow" size={16} />
           </a>
+        </header>
+        <div class="post-list">
+          {posts.map((post, index) => (
+            <a
+              class="post-row"
+              href={postUrl(post.id)}
+              data-reveal
+              style={`--reveal-delay: ${index * 90}ms`}
+            >
+              <time datetime={post.data.pubDate.toISOString()}>
+                {formatDate(post.data.pubDate)}
+              </time>
+              <h3>{post.data.title}</h3>
+              <span class="reading-time">
+                约 {readingMinutes(post.body)} 分钟
+              </span>
+              <span class="post-arrow">
+                <Icon name="external" size={20} />
+              </span>
+            </a>
+          ))}
+          {posts.length === 0 && <p class="muted">暂无文章。</p>}
         </div>
-        {posts.map((post, index) => (
-          <a
-            class="post-row"
-            href={postUrl(post.id)}
-            data-reveal
-            style={`--reveal-delay: ${index * 90}ms`}
-          >
-            <time datetime={post.data.pubDate.toISOString()}>
-              {formatDate(post.data.pubDate)}
-            </time>
-            <h3>{post.data.title}</h3>
-            <span class="reading-time">
-              约 {readingMinutes(post.body)} 分钟
-            </span>
-            <span class="post-arrow">
-              <Icon name="external" size={22} />
-            </span>
-          </a>
-        ))}
-        {posts.length === 0 && <p class="muted">暂无文章。</p>}
       </section>
     </div>
   </main>

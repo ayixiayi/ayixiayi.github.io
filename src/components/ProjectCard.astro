@@ -18,8 +18,11 @@ const email = project.url.startsWith('mailto:')
   target={email ? undefined : '_blank'}
   rel={email ? undefined : 'noopener noreferrer'}
   data-reveal
-  style={`--reveal-delay: ${index * 110}ms`}
+  style={`--reveal-delay: ${index * 90}ms`}
 >
+  <span class="work-no" aria-hidden="true">
+    {String(index + 1).padStart(2, '0')}
+  </span>
   <div class:list={['project-visual', project.motif]} aria-hidden="true">
     <svg viewBox="0 0 360 132" fill="none" focusable="false">
       {project.motif === 'memory' && (
@@ -91,22 +94,24 @@ const email = project.url.startsWith('mailto:')
       )}
     </svg>
   </div>
-  <h3>
-    {project.title}
-    <span class="card-icon">
-      <Icon name={email ? 'mail' : 'external'} size={17} />
-    </span>
-  </h3>
-  <p>{project.description}</p>
-  <div class="project-tags">
-    {project.tags.map((tag) => (
-      <span>{tag}</span>
-    ))}
-  </div>
-  {email && (
-    <div class="project-contact">
-      <p>如需查看代码或试用，请通过以下邮箱联系我。</p>
-      <span>{email}</span>
+  <div class="work-body">
+    <h3>
+      {project.title}
+      <span class="card-icon">
+        <Icon name={email ? 'mail' : 'external'} size={17} />
+      </span>
+    </h3>
+    <p>{project.description}</p>
+    <div class="project-tags">
+      {project.tags.map((tag) => (
+        <span>{tag}</span>
+      ))}
     </div>
-  )}
+    {email && (
+      <div class="project-contact">
+        <p>如需查看代码或试用，请通过以下邮箱联系我。</p>
+        <span>{email}</span>
+      </div>
+    )}
+  </div>
 </a>
