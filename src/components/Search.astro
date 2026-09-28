@@ -245,7 +245,7 @@
     padding: 0;
     border: 0;
     background: transparent;
-    color: var(--text-muted);
+    color: var(--fog);
     font: inherit;
     cursor: pointer;
   }
@@ -259,40 +259,42 @@
       rotate 400ms var(--ease-out);
   }
   .search-trigger:hover {
-    color: var(--text);
+    color: var(--gold);
   }
   .search-trigger:hover svg {
     scale: 1.1;
     rotate: -8deg;
   }
+  /* A sheet lowered from the top of the page, like a catalogue index. */
   dialog {
-    width: min(680px, calc(100vw - 2rem));
-    max-height: min(80vh, 760px);
-    padding: 1.75rem;
+    width: min(760px, calc(100vw - 2rem));
+    max-height: min(78vh, 760px);
+    margin-top: 10vh;
+    padding: 2rem 2.25rem 1.5rem;
     box-sizing: border-box;
-    border: 1px solid var(--border);
-    border-radius: 3px;
-    background: var(--surface);
-    color: var(--text);
+    border: 1px solid var(--rule);
+    border-top: 1px solid var(--gold);
+    border-radius: 0;
+    background: var(--ink-raised);
+    color: var(--fog);
     font-family: var(--font-sans);
     overflow: auto;
-    box-shadow: 0 40px 100px -30px rgb(0 0 0 / 70%);
+    box-shadow: 0 50px 120px -40px rgb(0 0 0 / 80%);
   }
   dialog[open] {
-    animation: dialog-in 520ms var(--ease-out);
+    animation: dialog-in 560ms var(--ease-out);
   }
   dialog::backdrop {
-    background: rgb(5 10 14 / 72%);
-    backdrop-filter: blur(6px);
+    background: rgb(6 10 12 / 76%);
+    backdrop-filter: blur(8px);
   }
   dialog[open]::backdrop {
-    animation: backdrop-in 520ms ease;
+    animation: backdrop-in 560ms ease;
   }
   @keyframes dialog-in {
     from {
       opacity: 0;
-      translate: 0 14px;
-      scale: 0.985;
+      translate: 0 -18px;
     }
   }
   @keyframes backdrop-in {
@@ -303,62 +305,72 @@
   @keyframes result-in {
     from {
       opacity: 0;
-      translate: 0 6px;
+      translate: 0 8px;
     }
   }
   .search-heading {
     display: flex;
-    align-items: center;
+    align-items: baseline;
     justify-content: space-between;
     gap: 1rem;
-    margin-bottom: 1.5rem;
+    margin-bottom: 1.25rem;
   }
   h2 {
     margin: 0;
-    font-size: 1.3rem;
-    font-weight: 500;
+    font-family: var(--font-display);
+    font-size: 1.6rem;
+    font-weight: 400;
+    letter-spacing: 0.1em;
+    color: var(--snow);
   }
   #search-close,
   #search-retry {
-    background: var(--surface-raised);
-    color: var(--text);
-    border: 1px solid var(--border);
-    border-radius: 3px;
-    padding: 0.5rem 0.75rem;
+    padding: 0.4rem 0;
+    border: 0;
+    border-bottom: 1px solid var(--rule-strong);
+    background: transparent;
+    color: var(--fog);
     font: inherit;
-    cursor: pointer;
-  }
-  #search-close {
     font-size: 0.8rem;
+    cursor: pointer;
+    transition:
+      color 300ms ease,
+      border-color 300ms ease;
+  }
+  #search-close:hover,
+  #search-retry:hover {
+    color: var(--gold);
+    border-color: var(--gold);
   }
   label {
     display: block;
-    margin-bottom: 0.55rem;
-    color: var(--text-muted);
-    font-size: 0.85rem;
+    margin-bottom: 0.25rem;
+    color: var(--mist);
+    font-size: 0.8rem;
   }
   input {
     box-sizing: border-box;
     width: 100%;
-    padding: 0.85rem 1rem;
-    border: 1px solid var(--border);
-    border-radius: 3px;
-    background: var(--bg);
-    color: var(--text);
-    font: inherit;
-    font-size: 1rem;
-    transition: border-color 300ms ease;
+    padding: 0.5rem 0 0.75rem;
+    border: 0;
+    border-bottom: 1px solid var(--rule-strong);
+    border-radius: 0;
+    background: transparent;
+    color: var(--snow);
+    font-family: var(--font-display);
+    font-size: 1.75rem;
+    transition: border-color 400ms ease;
   }
   input:focus {
-    border-color: var(--accent-soft);
+    border-bottom-color: var(--gold);
   }
   input::placeholder {
-    color: var(--text-muted);
+    color: var(--mist);
   }
   #search-status {
-    margin: 1rem 0;
-    color: var(--text-muted);
-    font-size: 0.85rem;
+    margin: 1rem 0 0.5rem;
+    color: var(--mist);
+    font: 0.75rem var(--font-mono);
   }
   #search-results {
     margin: 0;
@@ -366,51 +378,57 @@
     list-style: none;
   }
   #search-results :global(li) {
-    animation: result-in 420ms var(--ease-out) backwards;
+    animation: result-in 460ms var(--ease-out) backwards;
   }
   #search-results :global(li + li) {
-    border-top: 1px solid var(--border);
+    border-top: 1px solid var(--rule);
   }
   #search-results :global(a) {
     display: block;
-    padding: 1rem 0.5rem;
-    border-radius: 3px;
-    color: var(--text);
+    padding: 1rem 0.75rem;
+    margin-inline: -0.75rem;
+    color: var(--fog);
     text-decoration: none;
     overflow-wrap: anywhere;
-    transition: background-color 250ms ease;
+    transition: background-color 300ms ease;
   }
   #search-results :global(a:hover) {
-    background: var(--surface-raised);
+    background: var(--ink-soft);
   }
   #search-results :global(.result-kind) {
     display: block;
-    margin-bottom: 0.3rem;
-    color: var(--accent);
-    font-size: 0.7rem;
-    letter-spacing: 0.08em;
+    margin-bottom: 0.2rem;
+    color: var(--gold);
+    font: 0.7rem var(--font-mono);
+    letter-spacing: 0.1em;
   }
   #search-results :global(strong) {
-    font-size: 1rem;
-    font-weight: 500;
-    line-height: 1.6;
+    font-family: var(--font-display);
+    font-size: 1.3rem;
+    font-weight: 400;
+    line-height: 1.5;
+    color: var(--snow);
   }
   #search-results :global(p) {
-    margin: 0.35rem 0 0;
-    color: var(--text-muted);
+    margin: 0.3rem 0 0;
+    color: var(--mist);
     font-size: 0.85rem;
     line-height: 1.7;
   }
   button:focus-visible,
   input:focus-visible,
   #search-results :global(a:focus-visible) {
-    outline: 2px solid var(--accent);
+    outline: 2px solid var(--gold);
     outline-offset: 3px;
   }
   @media (max-width: 600px) {
     dialog {
-      padding: 1.2rem;
-      max-height: 85dvh;
+      margin-top: 1rem;
+      padding: 1.25rem;
+      max-height: 88dvh;
+    }
+    input {
+      font-size: 1.4rem;
     }
   }
 </style>

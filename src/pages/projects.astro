@@ -1,19 +1,22 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
+import Chapter from '../components/Chapter.astro';
 import ProjectCard from '../components/ProjectCard.astro';
 import { projects } from '../data/site';
 ---
 
 <BaseLayout title="项目" description="ayixiayi 的项目列表。">
-  <main id="main" class="container projects-page">
-    <header class="page-header" data-reveal>
+  <main id="main" class="projects-page">
+    <Chapter numeral="I" focus="12% 55%">
       <h1>项目</h1>
       <p>做过的和在做的东西。</p>
-    </header>
-    <div class="project-grid">
-      {projects.map((project, index) => (
-        <ProjectCard project={project} index={index} />
-      ))}
+    </Chapter>
+    <div class="container">
+      <div class="work-list">
+        {projects.map((project, index) => (
+          <ProjectCard project={project} index={index} />
+        ))}
+      </div>
     </div>
   </main>
 </BaseLayout>

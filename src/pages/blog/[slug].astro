@@ -8,6 +8,7 @@ import {
   displayTag,
 } from '../../lib/posts';
 import Icon from '../../components/Icon.astro';
+import Chapter from '../../components/Chapter.astro';
 
 export async function getStaticPaths() {
   const posts = await getPublishedPosts();
@@ -32,56 +33,60 @@ const contents = headings.filter((heading) => heading.depth <= 3);
   publishedAt={post.data.pubDate}
 >
   <div class="reading-progress" aria-hidden="true"></div>
-  <main id="main" class="container article-page">
-    <a href="/blog/" class="text-link back-link">
-      <Icon name="back" size={17} />
-      返回博客
-    </a>
-    <header class="article-header" data-reveal>
-      <div class="post-meta">
-        <time datetime={post.data.pubDate.toISOString()}>
-          {formatDate(post.data.pubDate)}
-        </time>
-        <span>约 {readingMinutes(post.body)} 分钟阅读</span>
-      </div>
-      <h1>{post.data.title}</h1>
-      <div class="project-tags">
-        {post.data.tags?.map((tag) => (
-          <span>{displayTag(tag)}</span>
-        ))}
-      </div>
-    </header>
-    <div class="article-grid">
-      <article class="prose">
-        <Content />
-      </article>
-      {contents.length > 0 && (
-        <aside class="toc">
-          <nav aria-label="文章目录">
-            <p class="toc-title">目录</p>
-            <ol>
-              {contents.map((heading) => (
-                <li class:list={{ nested: heading.depth > 1 }}>
-                  <a href={`#${heading.slug}`}>{heading.text}</a>
-                </li>
-              ))}
-            </ol>
-          </nav>
-          <a href="#main" class="text-link">
-            回到顶部 ↑
-          </a>
-        </aside>
-      )}
-    </div>
-    <div class="page-end">
-      <a href="/blog/" class="text-link">
+  <main id="main" class="article-page">
+    <Chapter short focus="72% 36%">
+      <a href="/blog/" class="text-link back-link">
         <Icon name="back" size={17} />
-        全部文章
+        返回博客
       </a>
-      <a href="/rss.xml" class="text-link">
-        <Icon name="rss" size={15} />
-        订阅更新
-      </a>
+      <div class="article-header">
+        <div class="post-meta">
+          <time datetime={post.data.pubDate.toISOString()}>
+            {formatDate(post.data.pubDate)}
+          </time>
+          <span>约 {readingMinutes(post.body)} 分钟阅读</span>
+        </div>
+        <h1>{post.data.title}</h1>
+        <div class="project-tags">
+          {post.data.tags?.map((tag) => (
+            <span>{displayTag(tag)}</span>
+          ))}
+        </div>
+      </div>
+    </Chapter>
+    <div class="container article-body">
+      <div class="article-grid">
+        <article class="prose">
+          <Content />
+        </article>
+        {contents.length > 0 && (
+          <aside class="toc">
+            <nav aria-label="文章目录">
+              <p class="toc-title">目录</p>
+              <ol>
+                {contents.map((heading) => (
+                  <li class:list={{ nested: heading.depth > 1 }}>
+                    <a href={`#${heading.slug}`}>{heading.text}</a>
+                  </li>
+                ))}
+              </ol>
+            </nav>
+            <a href="#main" class="text-link">
+              回到顶部 ↑
+            </a>
+          </aside>
+        )}
+      </div>
+      <div class="page-end">
+        <a href="/blog/" class="text-link">
+          <Icon name="back" size={17} />
+          全部文章
+        </a>
+        <a href="/rss.xml" class="text-link">
+          <Icon name="rss" size={15} />
+          订阅更新
+        </a>
+      </div>
     </div>
   </main>
 </BaseLayout>

@@ -1,0 +1,31 @@
+---
+interface Props {
+  /** Catalogue plate numeral shown beside the title. */
+  numeral?: string;
+  /** Which part of the painting this chapter opens on. */
+  focus?: string;
+  short?: boolean;
+}
+const { numeral, focus = '60% 40%', short = false } = Astro.props;
+---
+
+<header class:list={['chapter', { 'is-short': short }]}>
+  <div class="chapter-band" aria-hidden="true">
+    <img
+      src="/images/landscape.webp"
+      alt=""
+      width="1600"
+      height="1000"
+      decoding="async"
+      style={`object-position: ${focus}`}
+    />
+  </div>
+  <div class="chapter-copy" data-reveal>
+    {numeral && (
+      <span class="plate-no" aria-hidden="true">
+        {numeral}
+      </span>
+    )}
+    <slot />
+  </div>
+</header>

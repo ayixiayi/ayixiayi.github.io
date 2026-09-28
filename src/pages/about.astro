@@ -1,5 +1,7 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
+import Chapter from '../components/Chapter.astro';
+import { DEFAULT_SEED } from '../art/landscape';
 import { site } from '../data/site';
 ---
 
@@ -7,11 +9,11 @@ import { site } from '../data/site';
   title="关于"
   description="上海交通大学大二自动化专业学生，兴趣导向型开发者。"
 >
-  <main id="main" class="container about-page">
-    <header class="page-header" data-reveal>
+  <main id="main" class="about-page">
+    <Chapter numeral="III" focus="70% 34%">
       <h1>关于</h1>
-    </header>
-    <div class="about-grid">
+    </Chapter>
+    <div class="container about-grid">
       <div class="prose" data-reveal>
         <p>上海交通大学大二自动化专业学生，兴趣导向型开发者。</p>
         <p>我对技术充满好奇，准确地说，我爱着作为工具，而不是学科的计算机。</p>
@@ -63,13 +65,21 @@ import { site } from '../data/site';
         data-reveal
         style="--reveal-delay: 160ms"
       >
-        <img
-          src="/images/landscape.webp"
-          alt="程序生成的山谷与远景宫殿"
-          width="1600"
-          height="1000"
-          decoding="async"
-        />
+        <div class="scroll-rod" aria-hidden="true"></div>
+        <div class="scroll-silk">
+          <img
+            src="/images/landscape.webp"
+            alt="程序生成的山谷与远景宫殿"
+            width="1600"
+            height="1000"
+            decoding="async"
+          />
+        </div>
+        <div class="scroll-rod" aria-hidden="true"></div>
+        <figcaption>
+          <span>远方的宫殿</span>
+          p5.js · seed {DEFAULT_SEED}
+        </figcaption>
       </figure>
     </div>
   </main>

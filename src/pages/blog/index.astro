@@ -1,5 +1,6 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
+import Chapter from '../../components/Chapter.astro';
 import Icon from '../../components/Icon.astro';
 import {
   getPublishedPosts,
@@ -16,52 +17,54 @@ const years = [
 ---
 
 <BaseLayout title="博客" description="ayixiayi 的文章列表。">
-  <main id="main" class="container blog-page">
-    <header class="page-header" data-reveal>
+  <main id="main" class="blog-page">
+    <Chapter numeral="II" focus="50% 8%">
       <h1>博客</h1>
       <p>学到的和想到的。</p>
       <a href="/rss.xml" class="text-link rss-link">
         <Icon name="rss" size={16} />
         RSS
       </a>
-    </header>
-    {years.map((year) => (
-      <section class="blog-year" aria-label={`${year} 年的文章`}>
-        <h2 class="year-label">{year}</h2>
-        <div>
-          {posts
-            .filter((post) => post.data.pubDate.getUTCFullYear() === year)
-            .map((post, index) => (
-              <article
-                class="blog-entry"
-                data-reveal
-                style={`--reveal-delay: ${Math.min(index, 4) * 90}ms`}
-              >
-                <div class="post-meta">
-                  <time datetime={post.data.pubDate.toISOString()}>
-                    {formatDate(post.data.pubDate)}
-                  </time>
-                  <span>约 {readingMinutes(post.body)} 分钟阅读</span>
-                </div>
-                <h3>
-                  <a href={postUrl(post.id)}>
-                    {post.data.title}
-                    <span class="post-arrow">
-                      <Icon name="external" size={22} />
-                    </span>
-                  </a>
-                </h3>
-                <p>{post.data.description}</p>
-                <div class="project-tags">
-                  {post.data.tags?.map((tag) => (
-                    <span>{displayTag(tag)}</span>
-                  ))}
-                </div>
-              </article>
-            ))}
-        </div>
-      </section>
-    ))}
-    {posts.length === 0 && <p class="muted">暂无文章。</p>}
+    </Chapter>
+    <div class="container">
+      {years.map((year) => (
+        <section class="blog-year" aria-label={`${year} 年的文章`}>
+          <h2 class="year-label">{year}</h2>
+          <div class="blog-entries">
+            {posts
+              .filter((post) => post.data.pubDate.getUTCFullYear() === year)
+              .map((post, index) => (
+                <article
+                  class="blog-entry"
+                  data-reveal
+                  style={`--reveal-delay: ${Math.min(index, 4) * 90}ms`}
+                >
+                  <div class="post-meta">
+                    <time datetime={post.data.pubDate.toISOString()}>
+                      {formatDate(post.data.pubDate)}
+                    </time>
+                    <span>约 {readingMinutes(post.body)} 分钟阅读</span>
+                  </div>
+                  <h3>
+                    <a href={postUrl(post.id)}>
+                      {post.data.title}
+                      <span class="post-arrow">
+                        <Icon name="external" size={20} />
+                      </span>
+                    </a>
+                  </h3>
+                  <p>{post.data.description}</p>
+                  <div class="project-tags">
+                    {post.data.tags?.map((tag) => (
+                      <span>{displayTag(tag)}</span>
+                    ))}
+                  </div>
+                </article>
+              ))}
+          </div>
+        </section>
+      ))}
+      {posts.length === 0 && <p class="muted">暂无文章。</p>}
+    </div>
   </main>
 </BaseLayout>
