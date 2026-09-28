@@ -1206,7 +1206,7 @@ generative-landscape:is([data-state='loading'], [data-state='painting'])
   width: 100%;
   aspect-ratio: 9 / 19;
   object-fit: cover;
-  object-position: 74% 40%;
+  object-position: 78% 40%;
   border: 1px solid rgb(0 0 0 / 40%);
   transition: scale 2.4s var(--ease-out);
 }
