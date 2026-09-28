@@ -19,10 +19,13 @@ export function createLandscapeSketch(
   return (p) => {
     const W = 1600;
     const H = 1000;
-    const mist = 0.58;
+    const haze: RGB = [156, 170, 174];
     let valleyX: number;
     let valleyWidth: number;
     let horizon: number;
+    // The light sits low in the far valley, so every range is backlit.
+    let lightX: number;
+    let lightY: number;
     const jobs: (() => void)[] = [];
     let cursor = 0;
 
@@ -31,101 +34,276 @@ export function createLandscapeSketch(
       a[1] + (b[1] - a[1]) * t,
       a[2] + (b[2] - a[2]) * t,
     ];
+    const shade = (c: RGB, amount: number): RGB => [
+      c[0] + amount * 0.92,
+      c[1] + amount * 0.97,
+      c[2] + amount,
+    ];
+    const rgba = (c: RGB, alpha: number) =>
+      `rgba(${Math.round(c[0])},${Math.round(c[1])},${Math.round(c[2])},${alpha})`;
     const bell = (x: number, center: number, spread: number) =>
       Math.exp(-(((x - center) / spread) ** 2));
+    const clamp = (v: number, lo: number, hi: number) =>
+      Math.min(hi, Math.max(lo, v));
+    const ctx = () => p.drawingContext as CanvasRenderingContext2D;
 
     // Small fixed work units preserve random-call order regardless of frame timing.
-    const marks = (count: number, paint: () => void) => {
+    const marks = (
+      count: number,
+      paint: (c: CanvasRenderingContext2D) => void,
+    ) => {
       for (let start = 0; start < count; start += 320) {
         const size = Math.min(320, count - start);
         jobs.push(() => {
-          for (let i = 0; i < size; i++) paint();
+          const c = ctx();
+          c.lineCap = 'round';
+          c.lineJoin = 'round';
+          for (let i = 0; i < size; i++) paint(c);
         });
       }
     };
 
-    const ridge = (layer: number, base: number, color: RGB, count: number) => {
+    const sky = () => {
+      jobs.push(() => {
+        const c = ctx();
+        const fall = c.createLinearGradient(0, 0, 0, horizon + 120);
+        fall.addColorStop(0, 'rgb(34,47,57)');
+        fall.addColorStop(0.45, 'rgb(76,92,103)');
+        fall.addColorStop(0.82, 'rgb(136,150,156)');
+        fall.addColorStop(1, 'rgb(160,172,174)');
+        c.fillStyle = fall;
+        c.fillRect(0, 0, W, horizon + 120);
+        const glow = c.createRadialGradient(
+          lightX,
+          lightY,
+          0,
+          lightX,
+          lightY,
+          560,
+        );
+        glow.addColorStop(0, 'rgba(214,206,184,0.34)');
+        glow.addColorStop(0.35, 'rgba(190,192,184,0.14)');
+        glow.addColorStop(1, 'rgba(180,190,192,0)');
+        c.fillStyle = glow;
+        c.fillRect(0, 0, W, horizon + 120);
+      });
+      // Soft cloud banks: long, low-contrast strokes that thin toward the light.
+      marks(1700, (c) => {
+        const y = p.random() ** 1.35 * (horizon + 10);
+        const x = p.random(-100, W);
+        const bank = p.noise(x * 0.0016, y * 0.011);
+        if (bank < 0.47) return;
+        const light = bell(x, lightX, 520) * bell(y, lightY, 240);
+        const tone = (y / horizon) * 38 + light * 30 + (bank - 0.5) * 60;
+        c.strokeStyle = rgba(shade([66, 80, 90], tone), p.random(0.025, 0.06));
+        c.lineWidth = p.random(6, 22);
+        const length = p.random(60, 320);
+        c.beginPath();
+        c.moveTo(x, y);
+        c.quadraticCurveTo(
+          x + length / 2,
+          y + p.random(-3, 3),
+          x + length,
+          y + p.random(-2, 2),
+        );
+        c.stroke();
+      });
+    };
+
+    const ridge = (
+      layer: number,
+      base: number,
+      color: RGB,
+      strokes: number,
+    ) => {
       const heights: number[] = [];
       for (let x = 0; x <= W; x += 2) {
         const valley = bell(x, valleyX - layer * 29, valleyWidth + layer * 13);
-        const massif = 0.5 + p.noise(x * 0.0026, layer * 5.7) * 0.8;
-        const crags =
-          (p.noise(x * 0.009, layer * 13.2) - 0.45) * 90 +
-          (p.noise(x * 0.047, layer * 8.1) - 0.5) * 15;
+        const massif = 0.5 + p.noise(x * 0.0021, layer * 5.7) * 0.8;
+        // Ridged noise gives summits and saddles; a slower field decides which
+        // stretches rise into peaks and which stay as rounded shoulders.
+        const fold = p.noise(x * 0.0048, layer * 11.3) * 2 - 1;
+        const crest = 1 - Math.sqrt(fold * fold + 0.006);
+        const lift = clamp(
+          (p.noise(x * 0.0017, layer * 2.9) - 0.35) * 2.4,
+          0,
+          1,
+        );
+        const crag =
+          (p.noise(x * 0.024, layer * 8.1) - 0.5) * 11 +
+          (p.noise(x * 0.08, layer * 3.3) - 0.5) * 3;
         const spur = layer === 2 ? bell(x, valleyX + 70, 125) * 88 : 0;
         heights.push(
-          base - (1 - valley) * massif * (205 + layer * 17) + crags - spur,
+          base -
+            (1 - valley) *
+              (massif * (150 + layer * 16) +
+                crest ** 4 * lift * (95 + layer * 10)) +
+            crag * (0.5 + layer * 0.12) -
+            spur,
         );
       }
       const at = (x: number) =>
         heights[Math.min(heights.length - 1, Math.max(0, Math.floor(x / 2)))];
-      const air = Math.max(0, 0.34 - layer * 0.048) * mist;
-      const pigment = mix(color, [154, 168, 171], air);
+      const slopeAt = (x: number) =>
+        clamp((at(x + 12) - at(x - 12)) / 24, -2, 2);
+      // Faces turned toward the far light catch it; the others fall into shadow.
+      // The side toward the light eases over across the valley instead of
+      // flipping, so no seam runs down from the light source.
+      const facing = (x: number) =>
+        clamp(
+          ((slopeAt(x) * (lightX - x)) / (Math.abs(lightX - x) + 160)) * 1.4,
+          -1,
+          1,
+        );
+      // Aerial perspective: far ranges dissolve into the haze.
+      const air = Math.max(0, 0.46 - layer * 0.085);
+      const pigment = mix(color, haze, air);
+      const top = Math.min(...heights);
+      const foot = base + 200;
+
       jobs.push(() => {
-        p.noStroke();
-        p.fill(...pigment);
-        p.beginShape();
-        heights.forEach((y, i) => p.vertex(i * 2, y));
-        p.vertex(W, H);
-        p.vertex(0, H);
-        p.endShape(p.CLOSE);
+        const c = ctx();
+        c.save();
+        c.beginPath();
+        c.moveTo(0, H);
+        heights.forEach((y, i) => c.lineTo(i * 2, y));
+        c.lineTo(W, H);
+        c.closePath();
+        c.clip();
+        // Tone: crests hold the light, the foot of each range sinks into mist.
+        const tone = c.createLinearGradient(0, top, 0, foot);
+        tone.addColorStop(0, rgba(shade(pigment, 8), 1));
+        tone.addColorStop(0.5, rgba(pigment, 1));
+        tone.addColorStop(1, rgba(mix(pigment, haze, 0.34 - layer * 0.04), 1));
+        c.fillStyle = tone;
+        c.fillRect(0, top - 2, W, H - top + 2);
+        // Planes of light and shadow, washed in narrow overlapping columns.
+        for (let x = 0; x < W; x += 3) {
+          const light = facing(x + 1.5);
+          const near = 0.45 + bell(x, lightX, 520) * 0.55;
+          const y = at(x);
+          const depth = 150 + layer * 18;
+          const wash = c.createLinearGradient(0, y, 0, y + depth);
+          const colour = light > 0 ? [206, 214, 214] : [14, 22, 28];
+          const strength = Math.abs(light) * near * (light > 0 ? 0.16 : 0.2);
+          wash.addColorStop(0, `rgba(${colour},${strength})`);
+          wash.addColorStop(1, `rgba(${colour},0)`);
+          c.fillStyle = wash;
+          c.fillRect(x, y - 2, 3, depth);
+        }
+        const lamp = c.createRadialGradient(
+          lightX,
+          lightY,
+          0,
+          lightX,
+          lightY,
+          640,
+        );
+        lamp.addColorStop(0, `rgba(200,202,190,${0.2 - layer * 0.03})`);
+        lamp.addColorStop(1, 'rgba(200,202,190,0)');
+        c.fillStyle = lamp;
+        c.fillRect(0, top - 2, W, H - top + 2);
+        c.restore();
       });
 
-      // A continuous field of broken pigment gives the slopes volume before
-      // the finer marks. Column batches keep even dense paint interruptible.
-      for (let start = 0; start < W; start += 24) {
-        jobs.push(() => {
-          for (let x = start; x < start + 24; x += 4) {
-            const top = at(x);
-            for (let y = top + 3; y < Math.min(H, top + 370); y += 5) {
-              const depth = Math.min(1, (y - top) / 310);
-              const fold = p.noise(x * 0.009 + y * 0.002, layer * 9);
-              const stone = p.noise(x * 0.035, y * 0.022, layer * 3);
-              const light = bell(x, valleyX + 100, 470) * (1 - depth);
-              const change =
-                (fold - 0.5) * (85 + layer * 13) +
-                (stone - 0.5) * 24 +
-                light * 17 -
-                depth * 15;
-              p.stroke(
-                pigment[0] + change,
-                pigment[1] + change * 0.92,
-                pigment[2] + change * 0.77,
-                130,
-              );
-              p.strokeWeight(p.random(3, 7));
-              const px = x + p.random(-2, 2);
-              const py = y + p.random(-2, 2);
-              p.line(px, py, px + p.random(1, 5), py + p.random(2, 7));
-            }
-          }
-        });
-      }
-      marks(count, () => {
+      // Brushwork down the fall line: short, soft and spread over the whole face.
+      marks(strokes, (c) => {
+        const x = p.random(-20, W + 20);
+        const crestY = at(x);
+        const y = crestY + p.random() ** 1.3 * 230 + 3;
+        const near = bell(x, lightX, 560);
+        const grain = p.noise(x * 0.012, y * 0.009, layer * 4.1) - 0.5;
+        const amount =
+          facing(x) * (8 + near * 12) + grain * 30 - ((y - crestY) / 230) * 6;
+        c.strokeStyle = rgba(shade(pigment, amount), p.random(0.05, 0.13));
+        c.lineWidth = p.random(1.2, 3.6) + layer * 0.3;
+        const drift = slopeAt(x) * 0.7;
+        let px = x;
+        let py = y;
+        c.beginPath();
+        c.moveTo(px, py);
+        const steps = 2 + Math.floor(p.random(3));
+        const step = p.random(8, 22) * (0.85 + layer * 0.1);
+        for (let s = 0; s < steps; s++) {
+          px += drift * step + (p.noise(px * 0.05, py * 0.05) - 0.5) * 6;
+          py += step;
+          c.lineTo(px, py);
+        }
+        c.stroke();
+      });
+
+      // Rim light on the crest, broken by noise and fading away from the valley.
+      jobs.push(() => {
+        const c = ctx();
+        c.lineCap = 'butt';
+        const glow = mix(haze, [230, 228, 214], 0.5);
+        for (let x = 0; x < W; x += 3) {
+          const lit =
+            Math.max(0, facing(x) + 0.2) *
+            bell(x, lightX, 420) *
+            clamp((p.noise(x * 0.03, layer * 6.6) - 0.3) * 2.5, 0, 1);
+          if (lit < 0.04) continue;
+          c.strokeStyle = rgba(
+            glow,
+            Math.min(0.55, lit * (0.6 - layer * 0.08)),
+          );
+          c.lineWidth = 0.8 + lit * 1.4;
+          c.beginPath();
+          c.moveTo(x, at(x) + 1);
+          c.lineTo(x + 3, at(x + 3) + 1);
+          c.stroke();
+        }
+      });
+
+      // Fine tooth of the paint, following the same fall line.
+      marks(Math.round(strokes * 0.6), (c) => {
         const x = p.random(W);
-        const top = at(x);
-        const y = top + p.random() ** 1.7 * (H - top);
-        const depth = Math.min(1, (y - top) / 240);
-        const stone = p.noise(x * 0.016, y * 0.009, layer * 3);
-        const light = bell(x, valleyX + 60, 460) * (1 - depth * 0.55);
-        const change =
-          (stone - 0.49) * (28 + layer * 6) + light * 15 - depth * 9;
-        p.stroke(
-          pigment[0] + change,
-          pigment[1] + change,
-          pigment[2] + change * 0.78,
-          48 + layer * 5,
+        const crestY = at(x);
+        const y = crestY + p.random() ** 1.6 * (H - crestY);
+        const grain = p.noise(x * 0.02, y * 0.02, layer * 7) - 0.5;
+        c.strokeStyle = rgba(
+          shade(pigment, grain * 26 + facing(x) * 6),
+          p.random(0.05, 0.12),
         );
-        p.strokeWeight(p.random(0.6, 2.2 + layer * 0.23));
-        const length = p.random(2, 8 + layer * 2);
-        // Broken mineral strokes follow the local fall of the mountain face.
-        const slope = Math.max(
-          -1.5,
-          Math.min(1.5, (at(x + 16) - at(x - 16)) / 32),
-        );
-        p.line(x, y, x + length * 0.55, y + length * (0.25 + slope * 0.6));
+        c.lineWidth = p.random(0.6, 1.5);
+        const length = p.random(3, 9);
+        c.beginPath();
+        c.moveTo(x, y);
+        c.lineTo(x + slopeAt(x) * length * 0.6, y + length);
+        c.stroke();
       });
       return at;
+    };
+
+    // Mist pools in the valley below each range and separates it from the next.
+    const fog = (y: number, strength: number) => {
+      jobs.push(() => {
+        const c = ctx();
+        const band = c.createLinearGradient(0, y - 90, 0, y + 70);
+        band.addColorStop(0, rgba(haze, 0));
+        band.addColorStop(0.6, rgba(haze, strength));
+        band.addColorStop(1, rgba(haze, 0));
+        c.fillStyle = band;
+        c.fillRect(0, y - 90, W, 160);
+      });
+      marks(260, (c) => {
+        const x = p.random(-150, W);
+        const wy = y + p.randomGaussian(0, 24);
+        const veil = p.noise(x * 0.004, wy * 0.02);
+        if (veil < 0.45) return;
+        c.strokeStyle = rgba(mix(haze, [205, 212, 212], 0.3), strength * 0.22);
+        c.lineWidth = p.random(2, 7);
+        const length = p.random(120, 360);
+        c.beginPath();
+        c.moveTo(x, wy);
+        c.quadraticCurveTo(
+          x + length / 2,
+          wy + p.random(-5, 5),
+          x + length,
+          wy + p.random(-2, 2),
+        );
+        c.stroke();
+      });
     };
 
     const palace = (ground: (x: number) => number) => {
@@ -135,36 +313,105 @@ export function createLandscapeSketch(
         if (ground(candidate) < ground(x)) x = candidate;
       }
       const y = ground(x) + 2;
-      p.noStroke();
-      for (let i = 8; i > 0; i--) {
-        p.fill(215, 185, 111, 2.2);
-        p.ellipse(x + 7, y - 19, i * 10, i * 6);
-      }
-      for (let i = 0; i < 11; i++) {
-        const tx = x - 25 + i * 4.8;
-        const tall = [9, 12, 20, 14, 29, 40, 17, 26, 13, 18, 9][i];
-        const foot = Math.max(y, ground(tx));
-        const ty = y - tall;
-        p.fill(192 + p.random(27), 157 + p.random(20), 86);
-        p.rect(tx, ty, 5, foot - ty);
-        p.fill(244, 214, 143);
-        p.rect(tx, ty, 1.5, foot - ty);
-        p.fill(76, 89, 90);
-        p.triangle(tx - 1, ty, tx + 2, ty - 6, tx + 5, ty);
-        p.stroke(221, 190, 112, 200);
-        p.strokeWeight(0.7);
-        p.line(tx + 2, ty - 6, tx + 2, ty - 11);
-        p.noStroke();
-        for (let wy = ty + 6; wy < y - 2; wy += 7) {
-          p.fill(75, 78, 65);
-          p.rect(tx + 2, wy, 1.1, 2.1);
+      // Towers from the back pair to the keep: offset, width, height, spire.
+      const towers: [number, number, number, number][] = [
+        [-31, 6, 15, 9],
+        [31, 6, 17, 10],
+        [-22, 7, 25, 12],
+        [22, 7, 23, 12],
+        [-12, 8, 35, 15],
+        [12, 8, 33, 15],
+        [0, 12, 47, 21],
+      ].map(([dx, w, h, s]) => [
+        dx,
+        w,
+        h + p.random(-2, 2),
+        s + p.random(-1, 2),
+      ]);
+
+      jobs.push(() => {
+        const c = ctx();
+        const halo = c.createRadialGradient(x, y - 28, 0, x, y - 28, 130);
+        halo.addColorStop(0, 'rgba(236,200,128,0.26)');
+        halo.addColorStop(0.4, 'rgba(214,186,130,0.1)');
+        halo.addColorStop(1, 'rgba(200,180,140,0)');
+        c.fillStyle = halo;
+        c.fillRect(x - 140, y - 170, 280, 260);
+
+        const body = (left: number, width: number) => {
+          const g = c.createLinearGradient(left, 0, left + width, 0);
+          g.addColorStop(0, 'rgb(252,226,158)');
+          g.addColorStop(0.35, 'rgb(226,184,104)');
+          g.addColorStop(1, 'rgb(150,112,60)');
+          return g;
+        };
+
+        // Curtain wall with crenellations.
+        c.fillStyle = body(x - 34, 68);
+        c.fillRect(x - 34, y - 10, 68, 14);
+        c.fillStyle = 'rgb(246,214,146)';
+        for (let cx = x - 34; cx < x + 34; cx += 4)
+          c.fillRect(cx, y - 12, 2, 2);
+
+        for (const [dx, w, h, spire] of towers) {
+          const tx = x + dx;
+          const left = tx - w / 2;
+          const foot = Math.max(y, ground(tx)) + 3;
+          const top = y - h;
+          c.fillStyle = body(left, w);
+          c.fillRect(left, top, w, foot - top);
+          // Cornice.
+          c.fillStyle = 'rgba(90,66,40,0.7)';
+          c.fillRect(left - 0.5, top, w + 1, 1.2);
+          // Slate spire, lit on the valley side, with a gold finial.
+          c.fillStyle = 'rgb(58,72,82)';
+          c.beginPath();
+          c.moveTo(left - 1.5, top);
+          c.quadraticCurveTo(
+            tx - w * 0.15,
+            top - spire * 0.45,
+            tx,
+            top - spire,
+          );
+          c.quadraticCurveTo(
+            tx + w * 0.15,
+            top - spire * 0.45,
+            left + w + 1.5,
+            top,
+          );
+          c.closePath();
+          c.fill();
+          c.strokeStyle = 'rgba(214,190,132,0.75)';
+          c.lineWidth = 0.7;
+          c.beginPath();
+          c.moveTo(left - 1.2, top);
+          c.quadraticCurveTo(
+            tx - w * 0.15,
+            top - spire * 0.45,
+            tx,
+            top - spire,
+          );
+          c.stroke();
+          c.strokeStyle = 'rgb(236,204,128)';
+          c.beginPath();
+          c.moveTo(tx, top - spire);
+          c.lineTo(tx, top - spire - 5);
+          c.stroke();
+          // Lit windows in the upper storeys.
+          c.fillStyle = 'rgb(255,240,196)';
+          const columns = w >= 8 ? [tx - w / 4, tx + w / 4 - 1] : [tx - 0.6];
+          for (let wy = top + 5; wy < y - 6; wy += 7) {
+            for (const wx of columns) c.fillRect(wx, wy, 1.3, 2.4);
+          }
         }
-      }
-      p.stroke(186, 156, 90, 170);
-      p.strokeWeight(2);
-      for (let dx = -28; dx < 32; dx += 2) {
-        p.line(x + dx, ground(x + dx), x + dx + 2, ground(x + dx + 2));
-      }
+        // Seat the palace on the rock.
+        c.strokeStyle = 'rgba(40,46,44,0.8)';
+        c.lineWidth = 1.5;
+        c.beginPath();
+        for (let dx = -36; dx <= 36; dx += 2)
+          c.lineTo(x + dx, ground(x + dx) + 2);
+        c.stroke();
+      });
     };
 
     p.setup = () => {
@@ -177,54 +424,25 @@ export function createLandscapeSketch(
       valleyX = p.random(890, 1180);
       valleyWidth = p.random(230, 330);
       horizon = p.random(385, 440);
+      lightX = valleyX + 70;
+      lightY = horizon - 70;
       p.frameRate(60);
       p.background(46, 61, 65);
 
-      jobs.push(() => {
-        p.noStroke();
-        for (let y = 0; y < 600; y += 3) {
-          const color = mix([47, 61, 71], [144, 160, 164], (y / 600) ** 0.85);
-          p.fill(...color);
-          p.rect(0, y, W, 4);
-        }
-        const ctx = p.drawingContext as CanvasRenderingContext2D;
-        const glow = ctx.createRadialGradient(
-          valleyX + 70,
-          horizon - 94,
-          0,
-          valleyX + 70,
-          horizon - 94,
-          460,
-        );
-        glow.addColorStop(0, 'rgba(180, 193, 194, 0.2)');
-        glow.addColorStop(1, 'rgba(180, 193, 194, 0)');
-        ctx.fillStyle = glow;
-        ctx.fillRect(0, 0, W, 600);
-      });
-      marks(11500, () => {
-        const x = p.random(W);
-        const y = p.random(580);
-        const cloud = p.noise(x * 0.002, y * 0.006);
-        const glow = bell(x, valleyX + 60, 480) * bell(y, horizon - 94, 220);
-        p.stroke(
-          153 + glow * 24,
-          166 + glow * 21,
-          175 + glow * 16,
-          5 + cloud * 14,
-        );
-        p.strokeWeight(p.random(1, 7));
-        p.line(x, y, x + p.random(3, 36), y + p.random(-3, 3));
-      });
-
-      ridge(0, horizon, [111, 130, 140], 3800);
-      ridge(1, horizon + 65, [85, 105, 119], 4700);
-      const palaceGround = ridge(2, horizon + 138, [66, 87, 101], 5700);
-      jobs.push(() => palace(palaceGround));
-      ridge(3, horizon + 236, [54, 72, 84], 6600);
-      ridge(4, horizon + 382, [37, 54, 65], 8500);
+      sky();
+      ridge(0, horizon, [120, 136, 146], 1100);
+      fog(horizon + 60, 0.3);
+      ridge(1, horizon + 65, [92, 110, 124], 1300);
+      fog(horizon + 130, 0.28);
+      const palaceGround = ridge(2, horizon + 138, [68, 88, 103], 1500);
+      palace(palaceGround);
+      fog(horizon + 215, 0.24);
+      ridge(3, horizon + 236, [48, 66, 80], 1700);
+      fog(horizon + 330, 0.18);
+      ridge(4, horizon + 382, [33, 48, 60], 1900);
 
       // Broken reflections suggest water without outlining a bright ribbon.
-      marks(6700, () => {
+      marks(3600, (c) => {
         const t = p.random();
         const top = horizon + 213;
         const y = top + t * (H - top);
@@ -232,57 +450,56 @@ export function createLandscapeSketch(
         const halfWidth = (4 + t ** 1.5 * 85) * (0.7 + p.noise(t * 6) * 0.7);
         const x = center + p.random(-halfWidth, halfWidth);
         const shine = p.noise(x * 0.027, y * 0.049);
-        p.stroke(
-          91 + shine * 24,
-          116 + shine * 20,
-          116 + shine * 11,
-          p.random(8, 38) * bell(x, center, halfWidth * 0.9),
+        c.strokeStyle = rgba(
+          [100 + shine * 30, 122 + shine * 26, 124 + shine * 16],
+          p.random(0.03, 0.14) * bell(x, center, halfWidth * 0.9),
         );
-        p.strokeWeight(p.random(0.5, 1.5));
-        p.line(x, y, x + p.random(2, 6 + t * 16), y - 0.3);
+        c.lineWidth = p.random(0.6, 1.6);
+        c.beginPath();
+        c.moveTo(x, y);
+        c.lineTo(x + p.random(3, 8 + t * 18), y - 0.3);
+        c.stroke();
       });
 
-      const front = ridge(5, horizon + 666, [25, 37, 45], 9500);
+      const front = ridge(5, horizon + 666, [21, 31, 39], 2000);
 
-      marks(2300, () => {
+      // Dark spruce stand on the near slope, kept clear of the valley.
+      marks(1100, (c) => {
         const x = p.random(W);
-        const ground = front(x) + p.random(0, 80);
+        const ground = front(x) + p.random(-4, 80);
         if (
-          ground > H ||
+          ground > H + 10 ||
           (x > valleyX - 450 && x < valleyX + 210) ||
-          p.noise(x * 0.018, ground * 0.014) < 0.46
+          p.noise(x * 0.016, ground * 0.012) < 0.48
         )
           return;
-        const height = p.random(6, 37) * (0.5 + (ground - 700) / 300);
-        p.stroke(20, 34, 35, 160);
-        p.strokeWeight(0.8);
-        p.line(x, ground, x, ground - height);
-        for (let b = 0.2; b < 0.95; b += 0.17) {
-          const spread = height * b * 0.21;
-          const by = ground - height + height * b;
-          p.line(x - spread, by + 3, x, by);
-          p.line(x, by, x + spread, by + 3);
+        const height = p.random(8, 40) * (0.55 + (ground - 700) / 320);
+        const width = height * p.random(0.2, 0.28);
+        c.fillStyle = rgba([15 + p.random(6), 26 + p.random(6), 28], 0.92);
+        c.beginPath();
+        c.moveTo(x, ground - height);
+        for (let k = 1; k <= 6; k++) {
+          const t = k / 6;
+          const reach = width * t * (k % 2 ? 1 : 0.62);
+          c.lineTo(x + reach, ground - height * (1 - t) + 1);
         }
-      });
-
-      marks(5800, () => {
-        const y = p.random(horizon - 29, horizon + 346);
-        const center = valleyX + 20 - (y - horizon + 29) * 0.36;
-        const x = center + p.randomGaussian(0, 170);
-        const veil =
-          bell(x, center, valleyWidth - 40) * bell(y, horizon + 126, 160);
-        p.stroke(168, 182, 189, mist * veil * 5.5);
-        p.strokeWeight(p.random(2, 8));
-        p.line(x, y, x + p.random(12, 75), y + p.random(-1, 1));
+        for (let k = 6; k >= 1; k--) {
+          const t = k / 6;
+          const reach = width * t * (k % 2 ? 1 : 0.62);
+          c.lineTo(x - reach, ground - height * (1 - t) + 1);
+        }
+        c.closePath();
+        c.fill();
       });
 
       jobs.push(() => {
-        // Transparent glazing makes the left-side reading field quiet, not empty.
-        p.noStroke();
-        for (let x = 0; x < 790; x += 5) {
-          p.fill(14, 27, 30, 78 * (1 - x / 790) ** 1.4);
-          p.rect(x, 0, 5, H);
-        }
+        // A light glaze keeps the left side quiet under the page's own shading.
+        const c = ctx();
+        const glaze = c.createLinearGradient(0, 0, 820, 0);
+        glaze.addColorStop(0, 'rgba(14,24,28,0.22)');
+        glaze.addColorStop(1, 'rgba(14,24,28,0)');
+        c.fillStyle = glaze;
+        c.fillRect(0, 0, 820, H);
       });
     };
 
