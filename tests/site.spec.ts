@@ -30,7 +30,7 @@ test('project illustrations are decorative and preserve each card destination', 
   page,
 }) => {
   const projects = [
-    ['OpenMemory-enhanced', 'https://github.com/ayixiayi/OpenMemory-enhanced'],
+    ['OpenMem', 'https://github.com/ayixiayi/OpenMem'],
     ['OhMyAmpcode', 'mailto:ayixiayi@gmail.com'],
     ['MusicBarOs', 'https://github.com/ayixiayi/MusicBarOs'],
   ];
@@ -265,7 +265,7 @@ test('search reports a failed index fetch and can retry', async ({ page }) => {
   await page.getByRole('button', { name: '重试' }).click();
   await page.getByRole('searchbox').fill('MCP');
   await expect(
-    page.getByRole('dialog').getByRole('link', { name: /OpenMemory-enhanced/ }),
+    page.getByRole('dialog').getByRole('link', { name: /OpenMem/ }),
   ).toBeVisible();
 });
 
