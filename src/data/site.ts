@@ -13,11 +13,11 @@ export const navigation = [
 
 export const projects = [
   {
-    title: 'OpenMemory-enhanced',
+    title: 'OpenMem',
     description:
-      'AI 编程 Agent 的持久化记忆 MCP 服务器，基于 CaviraOSS/OpenMemory 独立开发。',
+      'AI 编程 Agent 的长期记忆 MCP 服务器：按项目隔离、跨会话延续，默认完全离线运行。',
     tags: ['TypeScript', 'MCP', 'AI Agent'],
-    url: 'https://github.com/ayixiayi/OpenMemory-enhanced',
+    url: 'https://github.com/ayixiayi/OpenMem',
     motif: 'memory',
   },
   {
