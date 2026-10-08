@@ -21,10 +21,11 @@ export const projects = [
     motif: 'memory',
   },
   {
-    title: 'OhMyAmpcode',
-    description: 'Amp 工作流扩展，整合技能管理、任务委派与操作审批。',
-    tags: ['TypeScript', 'Amp'],
-    url: 'mailto:ayixiayi@gmail.com',
+    title: 'agentrc',
+    description:
+      '编码 Agent 的个人配置层，像 .bashrc 一样只补 Amp、Claude Code 与 Codex 没有的部分：危险命令拦截、AI 审批与共享偏好。',
+    tags: ['TypeScript', 'Amp', 'Claude Code'],
+    url: 'https://github.com/ayixiayi/agentrc',
     motif: 'orchestration',
   },
   {
