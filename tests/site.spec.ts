@@ -31,7 +31,7 @@ test('project illustrations are decorative and preserve each card destination', 
 }) => {
   const projects = [
     ['OpenMem', 'https://github.com/ayixiayi/OpenMem'],
-    ['OhMyAmpcode', 'mailto:ayixiayi@gmail.com'],
+    ['agentrc', 'https://github.com/ayixiayi/agentrc'],
     ['MusicBarOs', 'https://github.com/ayixiayi/MusicBarOs'],
   ];
   for (const route of ['/', '/projects/']) {
@@ -51,44 +51,33 @@ test('project illustrations are decorative and preserve each card destination', 
         'true',
       );
       await expect(card.locator('.project-visual svg')).toBeVisible();
+      await expect(card).toHaveAttribute('target', '_blank');
+      await expect(card).toHaveAttribute('rel', 'noopener noreferrer');
     }
-    const oma = page.locator('.project-card').nth(1);
-    await expect(oma).not.toHaveAttribute('target');
-    await expect(oma).toContainText(
-      '如需查看代码或试用，请通过以下邮箱联系我。',
-    );
-    await expect(oma).toContainText('ayixiayi@gmail.com');
-    await expect(
-      page.locator('a[href*="github.com/ayixiayi/ohmyampcode" i]'),
-    ).toHaveCount(0);
   }
 });
 
-test('OMA search leads to the contact card without exposing a repository URL', async ({
+test('project search leads to the card on the projects page', async ({
   page,
-  request,
 }) => {
-  const index = await request.get('/search-index.json');
-  expect(await index.text()).not.toMatch(/github\.com\/ayixiayi\/ohmyampcode/i);
   await page.goto('/');
   await page.getByRole('button', { name: '搜索站点' }).click();
-  await page.getByRole('searchbox').fill('ohmyampcode');
+  await page.getByRole('searchbox').fill('agentrc');
   const result = page
     .getByRole('dialog')
-    .getByRole('link', { name: /OhMyAmpcode/ });
+    .getByRole('link', { name: /agentrc/ });
   await expect(result).toHaveAttribute(
     'href',
-    new URL('/projects/#ohmyampcode', page.url()).href,
+    new URL('/projects/#agentrc', page.url()).href,
   );
   await result.click();
-  await expect(page).toHaveURL('/projects/#ohmyampcode');
-  await expect(page.getByRole('link', { name: /OhMyAmpcode/ })).toHaveAttribute(
+  await expect(page).toHaveURL('/projects/#agentrc');
+  const card = page.locator('#agentrc');
+  await expect(card).toHaveAttribute(
     'href',
-    'mailto:ayixiayi@gmail.com',
+    'https://github.com/ayixiayi/agentrc',
   );
-  await expect(
-    page.getByText('ayixiayi@gmail.com', { exact: true }),
-  ).toBeInViewport();
+  await expect(card).toBeInViewport();
 });
 
 test('project-page search closes the dialog and focuses the destination card', async ({
@@ -98,15 +87,13 @@ test('project-page search closes the dialog and focuses the destination card', a
   const trigger = page.getByRole('button', { name: '搜索站点' });
   const dialog = page.getByRole('dialog');
   await trigger.click();
-  await page.getByRole('searchbox').fill('ohmyampcode');
-  await dialog.getByRole('link', { name: /OhMyAmpcode/ }).focus();
+  await page.getByRole('searchbox').fill('agentrc');
+  await dialog.getByRole('link', { name: /agentrc/ }).focus();
   await page.keyboard.press('Enter');
   await expect(dialog).not.toBeVisible();
-  await expect(page).toHaveURL('/projects/#ohmyampcode');
-  await expect(page.locator('#ohmyampcode')).toBeFocused();
-  await expect(
-    page.getByText('ayixiayi@gmail.com', { exact: true }),
-  ).toBeInViewport();
+  await expect(page).toHaveURL('/projects/#agentrc');
+  await expect(page.locator('#agentrc')).toBeFocused();
+  await expect(page.locator('#agentrc')).toBeInViewport();
   await trigger.click();
   await page.keyboard.press('Escape');
   await expect(trigger).toBeFocused();
