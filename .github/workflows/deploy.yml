@@ -6,6 +6,10 @@ on:
   pull_request:
     branches: [main]
   workflow_dispatch:
+  # The grade on the home and About pages is computed at build time, so the
+  # site is rebuilt as the academic year turns (00:05 on 1 September, UTC+8).
+  schedule:
+    - cron: '5 16 31 8 *'
 
 permissions:
   contents: read
