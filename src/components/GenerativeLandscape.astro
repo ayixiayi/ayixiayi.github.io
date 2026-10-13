@@ -38,6 +38,16 @@ import Icon from './Icon.astro';
         重新生成
       </button>
     </div>
+    <div class="label-actions" data-actions hidden>
+      <button type="button" data-copy aria-label="复制这幅画的链接">
+        <Icon name="link" size={14} />
+        复制链接
+      </button>
+      <button type="button" data-download aria-label="下载这幅画">
+        <Icon name="download" size={14} />
+        下载
+      </button>
+    </div>
   </div>
   <span class="scroll-cue" aria-hidden="true"></span>
 </generative-landscape>
@@ -60,6 +70,10 @@ import Icon from './Icon.astro';
       const status = this.querySelector<HTMLElement>('[data-art-status]')!;
       const progress = this.querySelector<HTMLElement>('[data-art-progress]')!;
       const random = this.querySelector<HTMLButtonElement>('[data-random]')!;
+      const actions = this.querySelector<HTMLElement>('[data-actions]')!;
+      const copy = this.querySelector<HTMLButtonElement>('[data-copy]')!;
+      const download =
+        this.querySelector<HTMLButtonElement>('[data-download]')!;
       let seed = Number(this.dataset.seed);
       let busy = false;
       let restoreFocus = false;
@@ -68,6 +82,7 @@ import Icon from './Icon.astro';
         if (value) restoreFocus = document.activeElement === random;
         busy = value;
         random.disabled = value;
+        download.disabled = value;
         surface.setAttribute('aria-busy', String(value));
         if (!value && restoreFocus && document.activeElement === document.body)
           random.focus({ preventScroll: true });
@@ -134,7 +149,54 @@ import Icon from './Icon.astro';
         }
       };
 
+      // Brief confirmations share the status line, then hand it back to the seed.
+      let noteTimer = 0;
+      const note = (message: string) => {
+        window.clearTimeout(noteTimer);
+        status.textContent = message;
+        noteTimer = window.setTimeout(() => {
+          if (!busy) status.textContent = `seed ${seed}`;
+        }, 2400);
+      };
+
+      // The poster is the default seed, so a link always reproduces what is shown.
+      copy.addEventListener('click', async () => {
+        const url = new URL('/', location.origin);
+        url.searchParams.set('seed', String(seed));
+        try {
+          await navigator.clipboard.writeText(url.href);
+          note('已复制链接');
+        } catch {
+          note(url.href);
+        }
+      });
+
+      download.addEventListener('click', async () => {
+        if (busy) return;
+        const canvas = host.querySelector('canvas');
+        const link = document.createElement('a');
+        let objectUrl: string | undefined;
+        if (canvas && this.dataset.state === 'ready') {
+          const blob = await new Promise<Blob | null>((resolve) =>
+            canvas.toBlob(resolve, 'image/png'),
+          );
+          if (!blob) return note('下载失败，请重试');
+          objectUrl = URL.createObjectURL(blob);
+          link.href = objectUrl;
+          link.download = `ayixiayi-seed-${seed}.png`;
+        } else {
+          link.href = '/images/landscape.webp';
+          link.download = `ayixiayi-seed-${seed}.webp`;
+        }
+        link.click();
+        if (objectUrl) {
+          const url = objectUrl;
+          window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+        }
+      });
+
       random.hidden = false;
+      actions.hidden = false;
       random.addEventListener('click', () => {
         if (busy) return;
         seed =

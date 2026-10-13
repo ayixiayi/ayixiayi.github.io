@@ -498,6 +498,8 @@ generative-landscape:is([data-state='loading'], [data-state='painting'])
   display: inline-flex;
   align-items: center;
   gap: 9px;
+  min-width: 0;
+  overflow-wrap: anywhere;
   font: 12px var(--font-mono);
   letter-spacing: 0.04em;
   color: var(--fog);
@@ -525,13 +527,26 @@ generative-landscape:is([data-state='loading'], [data-state='painting'])
   transition: color 300ms ease;
 }
 .landscape-caption button svg {
-  transition: rotate 700ms var(--ease-out);
+  transition:
+    rotate 700ms var(--ease-out),
+    translate 450ms var(--ease-out);
 }
 .landscape-caption button:hover {
   color: var(--gold);
 }
-.landscape-caption button:hover svg {
+.landscape-caption [data-random]:hover svg {
   rotate: 180deg;
+}
+.landscape-caption [data-download]:hover svg {
+  translate: 0 2px;
+}
+.label-actions {
+  display: flex;
+  gap: 18px;
+  border-top: 1px solid var(--rule);
+}
+.label-actions[hidden] {
+  display: none;
 }
 .scroll-cue {
   position: absolute;
@@ -765,16 +780,58 @@ generative-landscape:is([data-state='loading'], [data-state='painting'])
   display: flex;
   flex-wrap: wrap;
   gap: 4px 12px;
-  margin-top: 16px;
+  margin: 16px 0 0;
+  padding: 0;
+  list-style: none;
 }
-.project-tags span {
+.project-tags > * {
   font: 12px/1.8 var(--font-mono);
   color: var(--mist);
 }
-.project-tags span + span::before {
+.project-tags > * + *::before {
   content: '/';
   margin-right: 12px;
   color: var(--rule-strong);
+}
+.post-tags a {
+  transition: color 300ms ease;
+}
+.post-tags a:hover {
+  color: var(--gold);
+}
+
+/* Tag filter -------------------------------------------------------------- */
+
+.tag-filter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 30px;
+}
+.tag-filter a {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 34px;
+  padding: 4px 14px;
+  border: 1px solid var(--rule-strong);
+  font-size: 13px;
+  color: var(--fog);
+  transition:
+    border-color 300ms ease,
+    color 300ms ease;
+}
+.tag-filter a:hover {
+  border-color: var(--gold-soft);
+  color: var(--snow);
+}
+.tag-filter a[aria-current] {
+  border-color: var(--gold);
+  color: var(--gold);
+}
+.tag-count {
+  font: 11px var(--font-mono);
+  color: var(--mist);
 }
 .project-contact {
   margin-top: 18px;
@@ -1611,7 +1668,7 @@ generative-landscape:is([data-state='loading'], [data-state='painting'])
       );
   }
   .hero-copy {
-    bottom: 150px;
+    bottom: 196px;
   }
   .hero-title {
     font-size: clamp(64px, 22vw, 110px);
