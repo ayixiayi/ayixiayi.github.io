@@ -28,6 +28,23 @@ try {
   const bytes = Buffer.from(image.split(',')[1], 'base64');
   await writeFile(new URL('landscape.webp', directory), bytes);
   console.log(`Rendered public/images/landscape.webp (${bytes.length} bytes)`);
+
+  // Share cards for articles are laid over this 1200 × 630 crop of the same painting.
+  const card = await page.locator('canvas').evaluate((canvas) => {
+    const crop = document.createElement('canvas');
+    crop.width = 1200;
+    crop.height = 630;
+    crop
+      .getContext('2d')
+      .drawImage(canvas, 400, 160, 1200, 630, 0, 0, 1200, 630);
+    return crop.toDataURL('image/jpeg', 0.86);
+  });
+  const cardBytes = Buffer.from(card.split(',')[1], 'base64');
+  await writeFile(
+    new URL('../src/assets/og-base.jpg', import.meta.url),
+    cardBytes,
+  );
+  console.log(`Rendered src/assets/og-base.jpg (${cardBytes.length} bytes)`);
 } finally {
   await browser.close();
 }
