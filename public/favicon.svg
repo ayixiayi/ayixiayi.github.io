@@ -1,27 +1,11 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
-  <!-- 
-    Design: 回 × Amp Angular
-    Nested concentric octagonal frames (回 motif) with sharp diagonal cuts
-    at top-right and bottom-left corners (Amp chevron style).
-    All solid fills for crisp rendering at 16×16.
+  <!--
+    回 = 回, after Susumu Hirasawa: a machined gold plate (the outer 回)
+    holding an "=" at its core. Every edge sits on an even unit, so the
+    mark lands on whole pixels at 16 × 16.
   -->
-
-  <!-- Outer ring: thick octagonal frame with aggressive corner cuts -->
-  <path d="M6,1 L22,1 L31,10 L31,26 L26,31 L10,31 L1,22 L1,6 Z" fill="#d97757"/>
-  <path d="M7,4 L21,4 L28,11 L28,25 L25,28 L11,28 L4,21 L4,7 Z" fill="#0a0a0c"/>
-
-  <!-- Middle ring: second concentric octagonal frame -->
-  <path d="M11,8 L19,8 L24,13 L24,21 L21,24 L13,24 L8,19 L8,11 Z" fill="#d97757"/>
-  <path d="M12,10 L18,10 L22,14 L22,20 L20,22 L14,22 L10,18 L10,12 Z" fill="#0a0a0c"/>
-
-  <!-- Inner core: solid diamond -->
-  <polygon points="16,12 20,16 16,20 12,16" fill="#d97757"/>
-
-  <!-- Amp-style slash accents: sharp diagonal cuts overlaying top-right -->
-  <polygon points="23,1 31,1 31,9" fill="#d97757"/>
-  <polygon points="25,1 31,1 31,5" fill="#e8a882"/>
-
-  <!-- Mirror slash: bottom-left corner -->
-  <polygon points="1,23 1,31 9,31" fill="#d97757"/>
-  <polygon points="1,27 1,31 5,31" fill="#e8a882"/>
+  <rect width="32" height="32" rx="5" fill="#0b1012"/>
+  <path fill="#d2b06c" fill-rule="evenodd" d="M6 4h20l2 2v20l-2 2H6l-2-2V6zM8 8v16h16V8z"/>
+  <path fill="#0b1012" d="M14 4h4v2h-4zM14 26h4v2h-4zM4 14h2v4H4zM26 14h2v4h-2z"/>
+  <path fill="#d2b06c" d="M12 12h8v2h-8zM12 18h8v2h-8z"/>
 </svg>
