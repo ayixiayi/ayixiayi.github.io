@@ -39,7 +39,7 @@ export const projects = [
   {
     title: 'OpenMem',
     description:
-      'AI 编程 Agent 的长期记忆 MCP 服务器：按项目隔离、跨会话延续，默认完全离线运行。',
+      'AI 编程 Agent 的长期记忆 MCP 服务器：按项目隔离、跨会话延续，默认完全离线运行。部分代码源自 CaviraOSS/OpenMemory，在此致谢。',
     tags: ['TypeScript', 'MCP', 'AI Agent'],
     url: 'https://github.com/ayixiayi/OpenMem',
     motif: 'memory',

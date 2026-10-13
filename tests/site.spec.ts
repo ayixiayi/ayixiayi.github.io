@@ -55,6 +55,10 @@ test('project illustrations are decorative and preserve each card destination', 
       await expect(card).toHaveAttribute('target', '_blank');
       await expect(card).toHaveAttribute('rel', 'noopener noreferrer');
     }
+    // OpenMem is partly derived from OpenMemory; its NOTICE credits it, and so does the card.
+    await expect(page.locator('#openmem')).toContainText(
+      'CaviraOSS/OpenMemory',
+    );
   }
 });
 
