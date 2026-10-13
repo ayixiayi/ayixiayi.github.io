@@ -1,0 +1,37 @@
+---
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import Chapter from '../../../components/Chapter.astro';
+import BlogList from '../../../components/BlogList.astro';
+import TagFilter from '../../../components/TagFilter.astro';
+import { getPublishedPosts, tagCounts } from '../../../lib/posts';
+
+export async function getStaticPaths() {
+  const posts = await getPublishedPosts();
+  return tagCounts(posts).map(({ tag }) => ({
+    params: { tag },
+    props: {
+      tag,
+      posts: posts.filter((post) => post.data.tags.includes(tag)),
+      tags: tagCounts(posts),
+    },
+  }));
+}
+
+const { tag, posts, tags } = Astro.props;
+---
+
+<BaseLayout
+  title={`标签：${tag}`}
+  description={`ayixiayi 标记为「${tag}」的文章。`}
+>
+  <main id="main" class="blog-page">
+    <Chapter numeral="II" focus="50% 8%" short>
+      <h1>{tag}</h1>
+      <p>{posts.length} 篇文章</p>
+      <TagFilter tags={tags} current={tag} />
+    </Chapter>
+    <div class="container">
+      <BlogList posts={posts} />
+    </div>
+  </main>
+</BaseLayout>

@@ -1,0 +1,18 @@
+---
+import { tagUrl } from '../lib/posts';
+
+interface Props {
+  tags: string[];
+}
+const { tags } = Astro.props;
+---
+
+{tags.length > 0 && (
+  <ul class="project-tags post-tags" aria-label="标签">
+    {tags.map((tag) => (
+      <li>
+        <a href={tagUrl(tag)}>{tag}</a>
+      </li>
+    ))}
+  </ul>
+)}
