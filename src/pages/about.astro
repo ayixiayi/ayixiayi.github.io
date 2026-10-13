@@ -3,19 +3,18 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 import Chapter from '../components/Chapter.astro';
 import { DEFAULT_SEED } from '../art/landscape';
 import { site } from '../data/site';
+
+const intro = `上海交通大学${site.grade.zh}自动化专业学生，兴趣导向型开发者。`;
 ---
 
-<BaseLayout
-  title="关于"
-  description="上海交通大学大二自动化专业学生，兴趣导向型开发者。"
->
+<BaseLayout title="关于" description={intro}>
   <main id="main" class="about-page">
     <Chapter numeral="III" focus="70% 34%">
       <h1>关于</h1>
     </Chapter>
     <div class="container about-grid">
       <div class="prose" data-reveal>
-        <p>上海交通大学大二自动化专业学生，兴趣导向型开发者。</p>
+        <p>{intro}</p>
         <p>我对技术充满好奇，准确地说，我爱着作为工具，而不是学科的计算机。</p>
         <h2>关于本站</h2>
         <p>
