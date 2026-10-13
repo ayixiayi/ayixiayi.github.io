@@ -5,8 +5,9 @@ import {
   getPublishedPosts,
   formatDate,
   readingMinutes,
-  displayTag,
+  cardUrl,
 } from '../../lib/posts';
+import PostTags from '../../components/PostTags.astro';
 import Icon from '../../components/Icon.astro';
 import Chapter from '../../components/Chapter.astro';
 
@@ -31,6 +32,7 @@ const contents = headings.filter((heading) => heading.depth <= 3);
   description={post.data.description}
   article
   publishedAt={post.data.pubDate}
+  image={{ path: cardUrl(post.id), alt: post.data.title }}
 >
   <div class="reading-progress" aria-hidden="true"></div>
   <main id="main" class="article-page">
@@ -47,11 +49,7 @@ const contents = headings.filter((heading) => heading.depth <= 3);
           <span>约 {readingMinutes(post.body)} 分钟阅读</span>
         </div>
         <h1>{post.data.title}</h1>
-        <div class="project-tags">
-          {post.data.tags?.map((tag) => (
-            <span>{displayTag(tag)}</span>
-          ))}
-        </div>
+        <PostTags tags={post.data.tags} />
       </div>
     </Chapter>
     <div class="container article-body">

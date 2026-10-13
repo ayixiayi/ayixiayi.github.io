@@ -5,6 +5,9 @@ import '@fontsource/noto-serif-sc/400.css';
 import '@fontsource-variable/manrope';
 import '@fontsource/ibm-plex-mono/latin-400.css';
 import '../styles/global.css';
+// The wordmark and the home title are set in this face, so it is fetched
+// with the HTML rather than after the stylesheet asks for it.
+import displayFont from '@fontsource/instrument-serif/files/instrument-serif-latin-400-normal.woff2?url';
 import { navigation, site } from '../data/site';
 import Search from '../components/Search.astro';
 import Icon from '../components/Icon.astro';
@@ -15,6 +18,8 @@ interface Props {
   article?: boolean;
   publishedAt?: Date;
   noindex?: boolean;
+  /** A share card for this page; defaults to the landscape poster. */
+  image?: { path: string; alt: string };
 }
 
 const {
@@ -23,6 +28,7 @@ const {
   article = false,
   publishedAt,
   noindex = false,
+  image = { path: '/images/landscape.webp', alt: '程序生成的山谷与远景宫殿' },
 } = Astro.props;
 const path = Astro.url.pathname;
 const canonical = new URL(path, site.url);
@@ -38,7 +44,16 @@ const fullTitle = title === site.name ? site.name : `${title} — ${site.name}`;
     <meta name="theme-color" content="#0b1012" />
     {noindex && <meta name="robots" content="noindex" />}
     <link rel="canonical" href={canonical} />
+    <link rel="icon" href="/favicon.ico" sizes="32x32" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link
+      rel="preload"
+      href={displayFont}
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
     <link
       rel="alternate"
       type="application/rss+xml"
@@ -51,11 +66,8 @@ const fullTitle = title === site.name ? site.name : `${title} — ${site.name}`;
     <meta property="og:title" content={fullTitle} />
     <meta property="og:description" content={description} />
     <meta property="og:url" content={canonical} />
-    <meta
-      property="og:image"
-      content={new URL('/images/landscape.webp', site.url)}
-    />
-    <meta property="og:image:alt" content="程序生成的山谷与远景宫殿" />
+    <meta property="og:image" content={new URL(image.path, site.url)} />
+    <meta property="og:image:alt" content={image.alt} />
     {publishedAt && (
       <meta
         property="article:published_time"
