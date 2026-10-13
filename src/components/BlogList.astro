@@ -1,0 +1,49 @@
+---
+import type { CollectionEntry } from 'astro:content';
+import Icon from './Icon.astro';
+import PostTags from './PostTags.astro';
+import { postUrl, formatDate, readingMinutes } from '../lib/posts';
+
+interface Props {
+  posts: CollectionEntry<'blog'>[];
+}
+const { posts } = Astro.props;
+const years = [
+  ...new Set(posts.map((post) => post.data.pubDate.getUTCFullYear())),
+];
+---
+
+{years.map((year) => (
+  <section class="blog-year" aria-label={`${year} 年的文章`}>
+    <h2 class="year-label">{year}</h2>
+    <div class="blog-entries">
+      {posts
+        .filter((post) => post.data.pubDate.getUTCFullYear() === year)
+        .map((post, index) => (
+          <article
+            class="blog-entry"
+            data-reveal
+            style={`--reveal-delay: ${Math.min(index, 4) * 90}ms`}
+          >
+            <div class="post-meta">
+              <time datetime={post.data.pubDate.toISOString()}>
+                {formatDate(post.data.pubDate)}
+              </time>
+              <span>约 {readingMinutes(post.body)} 分钟阅读</span>
+            </div>
+            <h3>
+              <a href={postUrl(post.id)}>
+                {post.data.title}
+                <span class="post-arrow">
+                  <Icon name="external" size={20} />
+                </span>
+              </a>
+            </h3>
+            <p>{post.data.description}</p>
+            <PostTags tags={post.data.tags} />
+          </article>
+        ))}
+    </div>
+  </section>
+))}
+{posts.length === 0 && <p class="muted">暂无文章。</p>}

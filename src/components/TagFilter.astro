@@ -1,0 +1,23 @@
+---
+import { tagUrl } from '../lib/posts';
+
+interface Props {
+  tags: { tag: string; count: number }[];
+  current?: string;
+}
+const { tags, current } = Astro.props;
+---
+
+{tags.length > 0 && (
+  <nav class="tag-filter" aria-label="按标签浏览">
+    <a href="/blog/" aria-current={current ? undefined : 'page'}>
+      全部
+    </a>
+    {tags.map(({ tag, count }) => (
+      <a href={tagUrl(tag)} aria-current={tag === current ? 'page' : undefined}>
+        {tag}
+        <span class="tag-count">{count}</span>
+      </a>
+    ))}
+  </nav>
+)}
