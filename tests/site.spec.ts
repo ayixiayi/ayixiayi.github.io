@@ -1,6 +1,7 @@
 import { expect, test } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import { existsSync, readFileSync } from 'node:fs';
+import { grades, standing } from '../src/data/site';
 
 const publishedTitle = '测试样例：公开文章';
 const publishedPath = '/blog/fixture-published/';
@@ -152,10 +153,18 @@ test('the identity is updated without changing the author’s writing', async ({
   page,
 }) => {
   await page.goto('/');
-  await expect(page.getByText(/SJTU 自动化.*Sophomore/)).toBeVisible();
-  await expect(page.locator('main')).not.toContainText('Freshman');
+  // The grade is derived from the enrolment year, so earlier grades must not linger.
+  const grade = standing();
+  const earlier = grades.slice(0, grades.indexOf(grade));
+  await expect(
+    page.getByText(new RegExp(`SJTU 自动化.*${grade.en}`)),
+  ).toBeVisible();
+  for (const { en } of earlier)
+    await expect(page.locator('main')).not.toContainText(en);
   await page.goto('/about/');
-  await expect(page.locator('main')).not.toContainText('大一');
+  await expect(page.locator('main')).toContainText(`${grade.zh}自动化专业学生`);
+  for (const { zh } of earlier)
+    await expect(page.locator('main')).not.toContainText(`${zh}自动化`);
   await page.goto(publishedPath);
   await expect(
     page.getByRole('heading', { name: publishedTitle, exact: true }),
@@ -337,3 +346,87 @@ for (const route of ['/', '/projects/', '/blog/', '/about/', '/404.html']) {
     expect(result.violations).toEqual([]);
   });
 }
+
+test('a frontmatter slug sets the article address instead of the file name', async ({
+  request,
+}) => {
+  expect(existsSync('dist-test/blog/fixture-published/index.html')).toBe(true);
+  expect((await request.get('/blog/公开文章/')).status()).toBe(404);
+});
+
+test('malformed tags are normalised and each tag lists its articles', async ({
+  page,
+}) => {
+  await page.goto(publishedPath);
+  const tags = page.locator('.article-header').getByRole('list', {
+    name: '标签',
+  });
+  await expect(tags.getByRole('link')).toHaveText(['测试', '样例']);
+  await tags.getByRole('link', { name: '样例' }).click();
+  await expect(page).toHaveURL(/\/blog\/tags\/.+\/$/);
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('样例');
+  await expect(page.locator('.blog-entry h3')).toHaveText([publishedTitle]);
+  const filter = page.getByRole('navigation', { name: '按标签浏览' });
+  await expect(filter.getByRole('link', { name: /样例/ })).toHaveAttribute(
+    'aria-current',
+    'page',
+  );
+  await filter.getByRole('link', { name: '全部' }).click();
+  await expect(page).toHaveURL('/blog/');
+  await expect(page.locator('.blog-entry h3')).toHaveText([
+    recentTitle,
+    publishedTitle,
+  ]);
+});
+
+test('each article has its own share card', async ({ page, request }) => {
+  await page.goto(publishedPath);
+  const card = await page
+    .locator('meta[property="og:image"]')
+    .getAttribute('content');
+  expect(card).toBe('https://www.ayixiayi.com/og/fixture-published.png');
+  await expect(page.locator('meta[property="og:image:alt"]')).toHaveAttribute(
+    'content',
+    publishedTitle,
+  );
+  const image = await request.get('/og/fixture-published.png');
+  expect(image.ok()).toBe(true);
+  expect(image.headers()['content-type']).toContain('image/png');
+  const png = await image.body();
+  // PNG IHDR: width and height are big-endian at bytes 16 and 20.
+  expect([png.readUInt32BE(16), png.readUInt32BE(20)]).toEqual([1200, 630]);
+});
+
+test('the favicon set is served', async ({ page, request }) => {
+  await page.goto('/');
+  for (const selector of [
+    'link[rel="icon"][type="image/svg+xml"]',
+    'link[rel="icon"][sizes="32x32"]',
+    'link[rel="apple-touch-icon"]',
+  ]) {
+    const href = await page.locator(selector).getAttribute('href');
+    expect((await request.get(href!)).ok()).toBe(true);
+  }
+  expect((await request.get('/favicon-preview.html')).status()).toBe(404);
+});
+
+test('the painting can be shared as a link or saved as an image', async ({
+  page,
+  context,
+  browserName,
+}) => {
+  test.skip(
+    browserName !== 'chromium',
+    'clipboard permissions are Chromium-only',
+  );
+  await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+  await page.goto('/');
+  await page.getByRole('button', { name: '复制这幅画的链接' }).click();
+  await expect(page.locator('[data-art-status]')).toHaveText('已复制链接');
+  expect(await page.evaluate(() => navigator.clipboard.readText())).toMatch(
+    /\/\?seed=1847$/,
+  );
+  const download = page.waitForEvent('download');
+  await page.getByRole('button', { name: '下载这幅画' }).click();
+  expect((await download).suggestedFilename()).toBe('ayixiayi-seed-1847.webp');
+});
