@@ -38,6 +38,10 @@ npm run dev
 - 文章页面从 Markdown 标题生成目录（TOC），并显示发布日期、标签和估算阅读时间。
 - Instrument Serif、Noto Serif SC、Manrope 和 IBM Plex Mono 通过 Fontsource 随构建产物自托管，不依赖 Google Fonts 在线加载。Noto Serif SC 用于中文标题，按 unicode-range 分片，浏览器只下载页面实际用到的字符；中文正文使用系统无衬线字体。
 - 页面不加载不蒜子（Busuanzi）统计，不展示访问量。
+- 每篇文章在构建时生成一张 1200 × 630 的分享卡片 `/og/<文章>.png`（画作裁切 + 标题 + 日期），作为该页的 `og:image`；其他页面使用风景海报。卡片由 Satori 与 resvg 渲染，只加载标题实际用到的 Noto Serif SC 分片。
+- 标签有独立页面 `/blog/tags/<标签>/`，博客列表页顶部可按标签筛选。
+- 首页与关于页的年级（大一 … 大四 / Freshman … Senior）由 `src/data/site.ts` 中的入学年份在构建时算出，每年 9 月 1 日（北京时间）由工作流定时重新构建一次。
+- 首页画作的展签上可以复制当前画作的链接（`/?seed=…`）或下载图片；未重新生成时下载默认海报。
 
 ## 发布文章
 
@@ -48,6 +52,7 @@ npm run dev
 title: '一篇新记录'
 description: '用于列表、搜索和 RSS 的简短介绍。'
 pubDate: 2026-09-22
+slug: my-note
 tags: ['随笔', '开发']
 draft: true
 ---
@@ -58,7 +63,10 @@ draft: true
 `/images/uploads/example.webp` 引用。
 ```
 
-`title`、`description`、`pubDate` 必填，`tags` 可选，`draft` 默认为 `false`。准备公开时设为 `draft: false`，构建后对应地址为 `/blog/my-note/`。
+`title`、`description`、`pubDate` 必填，`slug`、`tags` 可选，`draft` 默认为 `false`。准备公开时设为 `draft: false`。
+
+- `slug` 决定文章地址：上例构建后为 `/blog/my-note/`，只能包含小写字母、数字和连字符。省略时用文件名生成地址（中文文件名会得到中文地址）。文章发布后不要再改 `slug`，否则旧链接会失效。
+- `tags` 每项一个标签。构建时会自动去掉 `#`/`＃`、拆开写在同一项里的多个标签（如 `＃随想＃recap`）并去重，所以从后台随手输入也不会产生错误标签。
 
 `getPublishedPosts()` 是公共内容边界：草稿不生成文章路由，也不进入博客列表、搜索索引和 RSS。**草稿不是保密机制**：文件仍在 Git 仓库中；不要写入密钥或私人材料。发布日期用于排序，不是定时发布开关。
 
@@ -80,7 +88,7 @@ draft: true
 npm run art:poster
 ```
 
-该命令使用 Playwright Chromium，访问**已经运行的** `http://127.0.0.1:4321/`，读取首页声明的默认种子，绘制并保存海报；不会自行启动服务器。默认种子定义在 `src/art/landscape.ts`。自定义服务器地址可作为可选参数传入：
+该命令使用 Playwright Chromium，访问**已经运行的** `http://127.0.0.1:4321/`，读取首页声明的默认种子，绘制并保存海报，同时更新文章分享卡片的背景 `src/assets/og-base.jpg`；不会自行启动服务器。默认种子定义在 `src/art/landscape.ts`。自定义服务器地址可作为可选参数传入：
 
 ```sh
 npm run art:poster -- http://127.0.0.1:4321
