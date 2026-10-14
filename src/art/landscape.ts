@@ -331,6 +331,10 @@ export function createLandscapeSketch(
 
       jobs.push(() => {
         const c = ctx();
+        // A new frame restores the canvas defaults, so this job must not
+        // inherit stroke state from the preceding brushwork batch.
+        c.lineCap = 'round';
+        c.lineJoin = 'round';
         const halo = c.createRadialGradient(x, y - 28, 0, x, y - 28, 130);
         halo.addColorStop(0, 'rgba(236,200,128,0.26)');
         halo.addColorStop(0.4, 'rgba(214,186,130,0.1)');

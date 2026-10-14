@@ -92,7 +92,7 @@ const contents = headings.filter((heading) => heading.depth <= 3);
 <script>
   // Mark the section being read so the contents double as a quiet position marker.
   const links = [
-    ...document.querySelectorAll<HTMLAnchorElement>('.toc a[href^="#"]'),
+    ...document.querySelectorAll<HTMLAnchorElement>('.toc nav a[href^="#"]'),
   ];
   const targets = links
     .map((link) =>

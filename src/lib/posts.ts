@@ -31,8 +31,16 @@ export function readingMinutes(body = '') {
   return Math.max(1, Math.ceil(chinese / 350 + words / 220));
 }
 
+/** Keep ordinary tag addresses; encode all others into one unambiguous segment. */
+export function tagSlug(tag: string) {
+  if (/^[\p{L}\p{N}_-]+$/u.test(tag) && tag === tag.normalize()) return tag;
+  // The reserved prefix is never used by the unchanged form. Encoding every
+  // code point also keeps literal escape sequences distinct from their inputs.
+  return `~${[...tag].map((char) => char.codePointAt(0)!.toString(16)).join('-')}`;
+}
+
 export function tagUrl(tag: string) {
-  return `/blog/tags/${encodeURIComponent(tag)}/`;
+  return `/blog/tags/${encodeURIComponent(tagSlug(tag))}/`;
 }
 
 type Post = Awaited<ReturnType<typeof getPublishedPosts>>[number];
