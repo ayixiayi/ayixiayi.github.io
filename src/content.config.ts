@@ -27,13 +27,17 @@ const blog = defineCollection({
     pubDate: z.coerce.date(),
     tags,
     // An optional short address (/blog/<slug>/); without it the file name is used.
-    slug: z
-      .string()
-      .regex(
-        /^[a-z0-9]+(?:-[a-z0-9]+)*$/,
-        'slug 只能包含小写字母、数字和连字符，例如 tool-paradox',
-      )
-      .optional(),
+    slug: z.preprocess(
+      // Clearing the optional CMS field writes an empty string; empty YAML is null.
+      (value) => (value === '' || value === null ? undefined : value),
+      z
+        .string()
+        .regex(
+          /^[a-z0-9]+(?:-[a-z0-9]+)*$/,
+          'slug 只能包含小写字母、数字和连字符，例如 tool-paradox',
+        )
+        .optional(),
+    ),
     draft: z.boolean().default(false),
   }),
 });

@@ -174,10 +174,11 @@ button {
 /* Header ---------------------------------------------------------------- */
 
 .site-header {
+  --header-height: 80px;
   position: fixed;
   inset: 0 0 auto;
   z-index: 40;
-  height: 80px;
+  height: var(--header-height);
   padding-inline: var(--edge);
   display: grid;
   grid-template-columns: 1fr auto 1fr;
@@ -1629,7 +1630,7 @@ generative-landscape:is([data-state='loading'], [data-state='painting'])
     width: calc(100% - 44px);
   }
   .site-header {
-    height: 68px;
+    --header-height: 68px;
     grid-template-columns: 1fr auto auto;
     gap: 16px;
   }

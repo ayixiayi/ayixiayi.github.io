@@ -131,18 +131,21 @@ const fullTitle = title === site.name ? site.name : `${title} — ${site.name}`;
         let frame = 0;
         const update = () => {
           frame = 0;
+          // Use the unscrolled height: is-solid changes the rendered height
+          // and must not move its own activation threshold.
+          const headerHeight = parseFloat(
+            getComputedStyle(header).getPropertyValue('--header-height'),
+          );
           const limit = stage
-            ? stage.offsetTop + stage.offsetHeight * 0.55 - header.offsetHeight
+            ? stage.offsetTop + stage.offsetHeight * 0.55 - headerHeight
             : 8;
           header.classList.toggle('is-solid', scrollY > limit);
         };
-        addEventListener(
-          'scroll',
-          () => {
-            if (!frame) frame = requestAnimationFrame(update);
-          },
-          { passive: true },
-        );
+        const scheduleUpdate = () => {
+          if (!frame) frame = requestAnimationFrame(update);
+        };
+        addEventListener('scroll', scheduleUpdate, { passive: true });
+        addEventListener('resize', scheduleUpdate);
         update();
 
         // Content is revealed as it enters view; settled elements drop the mask
