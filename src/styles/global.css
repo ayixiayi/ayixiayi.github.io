@@ -1,6 +1,6 @@
 /*
  * Nocturne catalogue.
- * The site is laid out like an art book for one painting: a full-bleed night
+ * The site is laid out like an art book for one painting: a framed night
  * landscape, catalogue plates numbered in roman numerals, wall labels, and a
  * hanging scroll. Cold ink and mist carry the page; gold belongs to the palace.
  */
@@ -273,30 +273,38 @@ button {
   color: var(--fog);
 }
 
-/* Hero: the painting is the page -------------------------------------- */
-
+/* A facing-page introduction and framed generative print. */
 .hero {
-  position: relative;
-  height: 100svh;
-  min-height: 600px;
+  width: min(1296px, calc(100% - 96px));
+  margin-inline: auto;
+  padding: clamp(108px, 9vw, 140px) 0 clamp(32px, 4vw, 60px);
+  display: grid;
+  grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.5fr);
+  gap: clamp(32px, 5vw, 84px);
+  align-items: center;
+  border-bottom: 1px solid var(--rule-strong);
+}
+body:has(.hero) .site-header {
+  background: rgb(11 16 18 / 95%);
+  border-bottom-color: var(--rule);
 }
 generative-landscape {
-  position: absolute;
-  inset: 0;
   display: block;
+  min-width: 0;
+  container: painting / inline-size;
 }
 .landscape-surface {
-  position: absolute;
-  inset: 0;
+  position: relative;
+  aspect-ratio: 8 / 5;
+  width: 100%;
   overflow: hidden;
   background: #26363a;
+  border: 1px solid var(--rule-strong);
   view-transition-name: painting;
 }
 .landscape-layer {
   position: absolute;
   inset: 0;
-  transform-origin: 62% 42%;
-  scale: calc(1 + var(--depth, 0) * 0.08);
 }
 .landscape-surface img,
 [data-canvas-host],
@@ -349,23 +357,6 @@ generative-landscape[data-state='ready'] [data-art-fallback] {
   opacity: 0.55;
   transition: opacity 1.2s ease;
 }
-/* The night pools at the edges and the painting dissolves into the page. */
-.landscape-surface::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  z-index: 2;
-  pointer-events: none;
-  background:
-    linear-gradient(180deg, rgb(11 16 18 / 55%), transparent 22%),
-    linear-gradient(90deg, rgb(11 16 18 / 62%), transparent 55%),
-    linear-gradient(
-      0deg,
-      var(--ink) 0%,
-      rgb(11 16 18 / 70%) 18%,
-      transparent 48%
-    );
-}
 .landscape-glaze {
   position: absolute;
   inset: 0;
@@ -380,7 +371,7 @@ generative-landscape[data-state='ready'] [data-art-fallback] {
   opacity: 0;
   transition: opacity 1.4s ease;
 }
-generative-landscape:hover .landscape-glaze {
+.landscape-surface:hover .landscape-glaze {
   opacity: 1;
 }
 /* Blended glazes would be recomposited on every stroke, so they wait for the
@@ -392,32 +383,14 @@ generative-landscape:is([data-state='loading'], [data-state='painting'])
   opacity: 0;
   transition: none;
 }
-/* Scrolling away sinks the painting into the dark. */
-generative-landscape::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  z-index: 2;
-  pointer-events: none;
-  background: var(--ink);
-  opacity: calc(var(--depth, 0) * 0.7);
-}
 .hero-copy {
-  position: absolute;
-  left: var(--edge);
-  bottom: 13vh;
-  z-index: 3;
-  translate: 0 calc(var(--depth, 0) * -14vh);
+  min-width: 0;
 }
 .hero-title {
-  margin: 0 0 30px -0.05em;
-  font-family: var(--font-display);
-  font-size: clamp(84px, 13.5vw, 208px);
-  font-weight: 400;
-  line-height: 0.9;
-  letter-spacing: -0.045em;
+  margin: 20px 0 12px -0.045em;
+  font: 400 clamp(76px, 9.4vw, 148px)/0.94 var(--font-display);
+  letter-spacing: -0.05em;
   color: var(--snow);
-  text-shadow: 0 4px 50px rgb(6 10 12 / 40%);
 }
 .hero-letters {
   display: flex;
@@ -427,58 +400,100 @@ generative-landscape::after {
   display: inline-block;
 }
 .hero-subtitle,
-.hero-description {
-  display: inline-flex;
+.latest-meta {
+  display: flex;
   align-items: center;
-  font-size: 15px;
-  letter-spacing: 0.04em;
-  color: #d8e0e2;
-}
-.hero-description::before {
-  content: '';
-  width: 32px;
-  height: 1px;
-  margin-inline: 16px;
-  background: var(--gold);
-}
-
-/* Wall label */
-.landscape-caption {
-  position: absolute;
-  right: var(--edge);
-  bottom: 13vh;
-  z-index: 3;
-  width: 252px;
-  padding: 18px 20px 12px;
-  background: rgb(11 16 18 / 72%);
-  border: 1px solid rgb(255 255 255 / 8%);
-  box-shadow: 0 30px 60px -30px rgb(0 0 0 / 70%);
-  translate: 0 calc(var(--depth, 0) * -8vh);
-}
-.label-title {
-  font-family: var(--font-display);
-  font-size: 21px;
-  line-height: 1.4;
-  letter-spacing: 0.06em;
-  color: var(--snow);
-}
-.label-medium {
-  margin-top: 3px;
-  font-size: 12px;
+  gap: 12px;
+  font: 12px/1.5 var(--font-mono);
   color: var(--mist);
 }
-.label-row {
+.hero-subtitle::before {
+  content: '';
+  width: 26px;
+  height: 1px;
+  background: var(--gold);
+}
+.hero-description {
+  font: 400 clamp(20px, 2vw, 32px)/1.5 var(--font-display);
+  color: var(--fog);
+}
+.hero-actions {
+  margin-top: 24px;
+}
+.hero-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  min-height: 44px;
+  padding: 0 18px;
+  background: var(--gold);
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 650;
+}
+.hero-primary:hover {
+  background: #dfbf84;
+}
+.hero-latest {
+  display: block;
+  max-width: 34ch;
+  margin-top: clamp(28px, 4vw, 60px);
+  padding-top: 16px;
+  border-top: 1px solid var(--rule-strong);
+}
+.latest-meta {
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  font-size: 11px;
+  color: var(--gold);
+}
+.latest-meta time {
+  color: var(--mist);
+}
+.latest-title {
+  display: block;
+  margin-top: 6px;
+  font: 400 19px/1.5 var(--font-display);
+  color: var(--snow);
+  overflow-wrap: anywhere;
+}
+.latest-title svg {
+  margin-left: 6px;
+  color: var(--gold);
+}
+.hero-latest:hover .latest-title {
+  color: var(--gold);
+}
+
+/* Shared plate label and controls sit outside the painted area. */
+.landscape-caption {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  margin-top: 14px;
-  padding-top: 6px;
-  border-top: 1px solid var(--rule);
+  flex-wrap: wrap;
+  gap: 4px 18px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--rule);
+}
+.label-title {
+  font: 400 20px/1.5 var(--font-display);
+  color: var(--snow);
+}
+.label-medium {
+  color: var(--mist);
+  font: 11px/1.6 var(--font-mono);
+}
+.label-controls {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 2px 14px;
 }
 .art-progress {
   position: absolute;
-  inset: -1px -1px auto;
+  inset: 0 0 auto;
   height: 1px;
   opacity: 0;
   transition: opacity 700ms ease;
@@ -520,8 +535,9 @@ generative-landscape:is([data-state='loading'], [data-state='painting'])
   display: inline-flex;
   align-items: center;
   gap: 7px;
-  min-height: 36px;
-  padding: 0;
+  min-height: 40px;
+  justify-content: center;
+  padding: 0 8px;
   font-size: 12px;
   white-space: nowrap;
   color: var(--fog);
@@ -543,29 +559,31 @@ generative-landscape:is([data-state='loading'], [data-state='painting'])
 }
 .label-actions {
   display: flex;
-  gap: 18px;
-  border-top: 1px solid var(--rule);
+  align-items: center;
+  gap: 4px;
 }
 .label-actions[hidden] {
   display: none;
 }
-.scroll-cue {
-  position: absolute;
-  left: 50%;
-  bottom: 30px;
-  z-index: 3;
-  width: 1px;
-  height: 56px;
-  overflow: hidden;
-  background: var(--rule-strong);
-  opacity: calc(1 - var(--depth, 0) * 4);
+@container painting (max-width: 610px) {
+  .label-actions :is([data-copy], [data-download]) span {
+    display: none;
+  }
+  .label-actions :is([data-copy], [data-download]) {
+    width: 36px;
+  }
 }
-.scroll-cue::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(transparent, var(--gold));
-  translate: 0 -100%;
+@container painting (max-width: 450px) {
+  .label-controls {
+    justify-content: space-between;
+    width: 100%;
+  }
+  .label-details {
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 2px 12px;
+  }
 }
 
 /* Catalogue plates ------------------------------------------------------ */
@@ -573,29 +591,25 @@ generative-landscape:is([data-state='loading'], [data-state='painting'])
 .catalogue {
   width: min(1296px, calc(100% - 96px));
   margin-inline: auto;
-  padding-top: 110px;
+  padding-top: clamp(36px, 5vw, 72px);
 }
 .plate {
-  display: grid;
-  grid-template-columns: var(--rail) minmax(0, 1fr);
-  gap: var(--gap);
-  padding-bottom: 130px;
+  padding-bottom: clamp(64px, 7vw, 100px);
 }
 .plate-head {
-  position: sticky;
-  top: 110px;
-  align-self: start;
   display: flex;
-  flex-direction: column;
-  align-items: flex-start;
+  align-items: baseline;
+  gap: 16px;
+  margin-bottom: 22px;
+}
+.plate-head .plate-no {
+  font-size: 36px;
 }
 .plate-head h2 {
-  margin-top: 14px;
   font-family: var(--font-display);
-  font-size: 40px;
+  font-size: clamp(28px, 3vw, 40px);
   font-weight: 400;
   line-height: 1.3;
-  letter-spacing: 0.1em;
   color: var(--snow);
 }
 .plate-link {
@@ -603,9 +617,9 @@ generative-landscape:is([data-state='loading'], [data-state='painting'])
   align-items: center;
   gap: 10px;
   min-height: 36px;
-  margin-top: 18px;
+  margin-left: auto;
   font-size: 13px;
-  color: var(--mist);
+  color: var(--fog);
   transition: color 300ms ease;
 }
 .plate-link svg {
@@ -887,7 +901,7 @@ generative-landscape:is([data-state='loading'], [data-state='painting'])
 }
 .post-row:hover .post-arrow,
 .blog-entry h3 a:hover .post-arrow {
-  translate: 3px -3px;
+  translate: 3px 0;
 }
 
 /* Chapter openers ------------------------------------------------------- */
@@ -1019,6 +1033,45 @@ generative-landscape:is([data-state='loading'], [data-state='painting'])
   max-width: 680px;
   font-size: 15px;
   color: var(--fog);
+}
+
+/* A compact project shelf on the homepage; the project archive uses full rows. */
+.home-projects {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: clamp(20px, 3vw, 44px);
+}
+.home-projects .project-card {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 20px 0 24px;
+}
+.home-projects .work-no {
+  display: none;
+}
+.home-projects .project-visual {
+  width: 100%;
+  padding: 0;
+}
+.home-projects .project-visual::after {
+  inset: 0;
+}
+.home-projects .project-visual svg {
+  height: clamp(110px, 11vw, 156px);
+}
+.home-projects .work-body {
+  padding: 0;
+}
+.home-projects h3 {
+  font-size: 28px;
+  margin-bottom: 10px;
+}
+.home-projects .work-body > p {
+  font-size: 14px;
+}
+.home-projects .project-card::before {
+  content: none;
 }
 
 /* Article --------------------------------------------------------------- */
@@ -1441,11 +1494,6 @@ generative-landscape:is([data-state='loading'], [data-state='painting'])
     stroke-dashoffset: -14;
   }
 }
-@keyframes cue {
-  to {
-    translate: 0 100%;
-  }
-}
 @keyframes drift-slow {
   from {
     scale: 1.02;
@@ -1538,7 +1586,7 @@ generative-landscape:is([data-state='loading'], [data-state='painting'])
 
 @media (prefers-reduced-motion: no-preference) {
   .hero [data-art-fallback] {
-    animation: develop 2.8s var(--ease-out) backwards;
+    animation: develop 700ms var(--ease-out) backwards;
   }
   .hero-letters > span {
     animation: unveil 1.4s var(--ease-out) calc(0.35s + var(--i, 0) * 70ms)
@@ -1553,9 +1601,7 @@ generative-landscape:is([data-state='loading'], [data-state='painting'])
   .hero-description {
     animation: unveil 1.2s var(--ease-out) 1.02s backwards;
   }
-  .landscape-caption {
-    animation: unveil 1.2s var(--ease-out) 1.2s backwards;
-  }
+
   .scroll-cue::after {
     animation: cue 2.6s var(--ease-in-out) 2s infinite;
   }
@@ -1686,82 +1732,60 @@ generative-landscape:is([data-state='loading'], [data-state='painting'])
     display: none;
   }
   .hero {
-    min-height: 560px;
-  }
-  .landscape-surface img,
-  [data-canvas-host],
-  [data-canvas-host] canvas {
-    object-position: 76% 42%;
-  }
-  .landscape-surface::after {
-    background:
-      linear-gradient(180deg, rgb(11 16 18 / 60%), transparent 20%),
-      linear-gradient(
-        0deg,
-        var(--ink) 4%,
-        rgb(11 16 18 / 80%) 30%,
-        transparent 62%
-      );
-  }
-  .hero-copy {
-    bottom: 196px;
+    width: calc(100% - 44px);
+    padding: 96px 0 24px;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 26px;
   }
   .hero-title {
-    font-size: clamp(64px, 22vw, 110px);
-    margin-bottom: 18px;
+    font-size: clamp(72px, 15vw, 108px);
+    margin: 12px 0 6px -0.045em;
   }
-  .hero-subtitle,
-  .hero-description {
+  .hero-actions {
     display: flex;
-    font-size: 13px;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 14px 20px;
+    margin-top: 18px;
   }
-  .hero-description::before {
-    width: 20px;
-    margin: 0 10px 0 0;
+  .hero-latest {
+    min-width: 0;
+    flex: 1 1 135px;
+    margin: 0;
+    padding: 0 0 0 16px;
+    border-top: none;
+    border-left: 1px solid var(--rule-strong);
   }
-  .landscape-caption {
-    left: var(--edge);
-    right: var(--edge);
-    bottom: 22px;
-    width: auto;
-    padding: 12px 16px 6px;
+  .latest-title {
+    font-size: 16px;
   }
-  .label-medium {
-    display: none;
-  }
-  .label-title {
-    font-size: 17px;
-  }
-  .label-row {
-    margin-top: 8px;
-  }
-  .scroll-cue {
-    display: none;
-  }
-  .catalogue {
-    padding-top: 64px;
-  }
-  .plate,
+
   .blog-year {
     grid-template-columns: 1fr;
     gap: 26px;
     padding-bottom: 80px;
   }
-  .plate-head {
-    position: static;
-    flex-direction: row;
-    align-items: baseline;
+  .home-projects {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+  .home-projects .project-card {
+    display: grid;
+    grid-template-columns: clamp(64px, 20vw, 120px) minmax(0, 1fr);
     gap: 16px;
   }
-  .plate-head .plate-no {
-    font-size: 44px;
+  .home-projects .project-visual svg {
+    height: auto;
+    aspect-ratio: 1 / 1;
   }
-  .plate-head h2 {
-    margin-top: 0;
-    font-size: 30px;
+  .home-projects .work-body {
+    grid-column: 2;
   }
-  .plate-link {
-    margin: 0 0 0 auto;
+  .home-projects h3 {
+    font-size: 24px;
+  }
+  .article-neighbors {
+    margin-left: 0;
   }
   .project-card {
     grid-template-columns: 1fr;
@@ -1821,9 +1845,6 @@ generative-landscape:is([data-state='loading'], [data-state='painting'])
   }
   .blog-entry h3 {
     font-size: 25px;
-  }
-  .article-neighbors {
-    margin-left: 0;
   }
   .article-grid {
     display: flex;
