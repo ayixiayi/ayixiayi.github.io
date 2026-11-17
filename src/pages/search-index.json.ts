@@ -9,10 +9,11 @@ export async function GET() {
       description: post.data.description,
       url: postUrl(post.id),
       kind: '文章',
+      tags: post.data.tags,
       text: [
         post.data.title,
         post.data.description,
-        ...(post.data.tags ?? []),
+        ...post.data.tags,
         post.body,
       ].join(' '),
     })),
@@ -21,6 +22,7 @@ export async function GET() {
       description: project.description,
       url: `/projects/#${project.title.toLowerCase()}`,
       kind: '项目',
+      tags: project.tags,
       text: [project.title, project.description, ...project.tags].join(' '),
     })),
   ]);

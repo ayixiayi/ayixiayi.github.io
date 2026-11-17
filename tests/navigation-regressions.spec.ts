@@ -85,3 +85,42 @@ test('the header recalculates its boundary when the viewport is resized', async 
   await page.setViewportSize({ width: 400, height: 900 });
   await expect(header).toHaveClass(/is-solid/);
 });
+
+test('adjacent articles follow the published timeline', async ({ page }) => {
+  await page.goto('/blog/fixture-recent/');
+  const neighbors = page.getByRole('navigation', { name: '相邻文章' });
+  await expect(neighbors.getByRole('link')).toHaveCount(1);
+  await neighbors.getByRole('link', { name: /较早一篇.*公开文章/ }).click();
+  await expect(page).toHaveURL('/blog/fixture-published/');
+  await expect(neighbors.getByRole('link')).toHaveCount(1);
+  await expect(
+    neighbors.getByRole('link', { name: /较新一篇.*近期文章/ }),
+  ).toHaveAttribute('href', '/blog/fixture-recent/');
+});
+
+test('a project title outranks body mentions and can be opened from the keyboard', async ({
+  page,
+}) => {
+  await page.goto('/projects/');
+  await page.getByRole('button', { name: '搜索站点' }).click();
+  const input = page.getByRole('searchbox');
+  const results = page
+    .getByRole('list', { name: '搜索结果' })
+    .getByRole('link');
+  await input.fill('ＯｐｅｎＭｅｍ');
+  await expect(results).toHaveCount(2);
+  await expect(results.nth(0)).toContainText('项目');
+  await expect(results.nth(1)).toContainText('近期文章');
+  await input.press('ArrowDown');
+  await expect(results.nth(0)).toBeFocused();
+  await page.keyboard.press('ArrowDown');
+  await expect(results.nth(1)).toBeFocused();
+  await page.keyboard.press('ArrowUp');
+  await page.keyboard.press('ArrowUp');
+  await expect(input).toBeFocused();
+  await input.dispatchEvent('keydown', { key: 'Enter', isComposing: true });
+  await expect(input).toBeFocused();
+  await input.press('Enter');
+  await expect(page).toHaveURL('/projects/#openmem');
+  await expect(page.locator('#openmem')).toBeFocused();
+});
