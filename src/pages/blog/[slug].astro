@@ -3,6 +3,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 import { render, type CollectionEntry } from 'astro:content';
 import {
   getPublishedPosts,
+  postUrl,
   formatDate,
   readingMinutes,
   cardUrl,
@@ -11,20 +12,36 @@ import PostTags from '../../components/PostTags.astro';
 import Icon from '../../components/Icon.astro';
 import Chapter from '../../components/Chapter.astro';
 
+type ArticleLink = { title: string; url: string };
+
 export async function getStaticPaths() {
   const posts = await getPublishedPosts();
-  return posts.map((post) => ({
+  const links = posts.map((post) => ({
+    title: post.data.title,
+    url: postUrl(post.id),
+  }));
+  return posts.map((post, index) => ({
     params: { slug: post.id },
-    props: { post },
+    props: {
+      post,
+      newer: links[index - 1],
+      older: links[index + 1],
+    },
   }));
 }
 
 interface Props {
   post: CollectionEntry<'blog'>;
+  newer?: ArticleLink;
+  older?: ArticleLink;
 }
-const { post } = Astro.props;
+const { post, newer, older } = Astro.props;
 const { Content, headings } = await render(post);
 const contents = headings.filter((heading) => heading.depth <= 3);
+const topDepth = contents.reduce(
+  (depth, heading) => Math.min(depth, heading.depth),
+  3,
+);
 ---
 
 <BaseLayout
@@ -63,7 +80,7 @@ const contents = headings.filter((heading) => heading.depth <= 3);
               <p class="toc-title">目录</p>
               <ol>
                 {contents.map((heading) => (
-                  <li class:list={{ nested: heading.depth > 1 }}>
+                  <li class:list={{ nested: heading.depth > topDepth }}>
                     <a href={`#${heading.slug}`}>{heading.text}</a>
                   </li>
                 ))}
@@ -75,6 +92,26 @@ const contents = headings.filter((heading) => heading.depth <= 3);
           </aside>
         )}
       </div>
+      {(newer || older) && (
+        <nav class="article-neighbors" aria-label="相邻文章">
+          {newer && (
+            <a href={newer.url}>
+              <span>
+                <Icon name="back" size={16} /> 较新一篇
+              </span>
+              <strong>{newer.title}</strong>
+            </a>
+          )}
+          {older && (
+            <a href={older.url}>
+              <span>
+                较早一篇 <Icon name="arrow" size={16} />
+              </span>
+              <strong>{older.title}</strong>
+            </a>
+          )}
+        </nav>
+      )}
       <div class="page-end">
         <a href="/blog/" class="text-link">
           <Icon name="back" size={17} />

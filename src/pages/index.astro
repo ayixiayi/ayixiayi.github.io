@@ -1,9 +1,9 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 import GenerativeLandscape from '../components/GenerativeLandscape.astro';
-import ProjectCard from '../components/ProjectCard.astro';
+import ProjectList from '../components/ProjectList.astro';
 import Icon from '../components/Icon.astro';
-import { projects, site } from '../data/site';
+import { site } from '../data/site';
 import {
   getPublishedPosts,
   postUrl,
@@ -12,26 +12,48 @@ import {
 } from '../lib/posts';
 
 const posts = (await getPublishedPosts()).slice(0, 3);
+const latest = posts[0];
 ---
 
 <BaseLayout title={site.name}>
   <main id="main">
     <section class="hero" aria-labelledby="intro-title">
-      <GenerativeLandscape>
-        <div class="hero-copy">
-          <h1 id="intro-title" class="hero-title">
-            <span class="sr-only">ayixiayi</span>
-            <span class="hero-letters" aria-hidden="true">
-              {[...'ayixiayi'].map((letter, index) => (
-                <span style={`--i: ${index}`}>{letter}</span>
-              ))}
-              <span class="signature-dot">.</span>
-            </span>
-          </h1>
-          <p class="hero-subtitle">SJTU 自动化 · {site.grade.en}</p>
-          <p class="hero-description">兴趣导向型开发者</p>
+      <div class="hero-copy">
+        <p class="hero-subtitle">SJTU 自动化 · {site.grade.en}</p>
+        <h1 id="intro-title" class="hero-title">
+          <span class="sr-only">ayixiayi</span>
+          <span class="hero-letters" aria-hidden="true">
+            {[...'ayixiayi'].map((letter, index) => (
+              <span style={`--i: ${index}`}>{letter}</span>
+            ))}
+            <span class="signature-dot">.</span>
+          </span>
+        </h1>
+        <p class="hero-description">兴趣导向型开发者</p>
+        <div class="hero-actions">
+          <a href="#projects-title" class="hero-primary">
+            浏览项目 <Icon name="arrow" size={16} />
+          </a>
+          {latest && (
+            <a
+              href={postUrl(latest.id)}
+              class="hero-latest"
+              aria-label={`读最新文章：${latest.data.title}`}
+            >
+              <span class="latest-meta">
+                最新文章{' '}
+                <time datetime={latest.data.pubDate.toISOString()}>
+                  {formatDate(latest.data.pubDate)}
+                </time>
+              </span>
+              <span class="latest-title">
+                {latest.data.title} <Icon name="arrow" size={16} />
+              </span>
+            </a>
+          )}
         </div>
-      </GenerativeLandscape>
+      </div>
+      <GenerativeLandscape />
     </section>
 
     <div class="catalogue">
@@ -40,16 +62,14 @@ const posts = (await getPublishedPosts()).slice(0, 3);
           <span class="plate-no" aria-hidden="true">
             I
           </span>
-          <h2 id="projects-title">项目</h2>
+          <h2 id="projects-title" tabindex="-1">
+            项目
+          </h2>
           <a href="/projects/" class="plate-link">
             全部项目 <Icon name="arrow" size={16} />
           </a>
         </header>
-        <div class="work-list">
-          {projects.map((project, index) => (
-            <ProjectCard project={project} index={index} />
-          ))}
-        </div>
+        <ProjectList home />
       </section>
 
       <section class="plate" aria-labelledby="writing-title">
@@ -78,7 +98,7 @@ const posts = (await getPublishedPosts()).slice(0, 3);
                 约 {readingMinutes(post.body)} 分钟
               </span>
               <span class="post-arrow">
-                <Icon name="external" size={20} />
+                <Icon name="arrow" size={20} />
               </span>
             </a>
           ))}

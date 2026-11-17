@@ -264,8 +264,12 @@ test('search reports a failed index fetch and can retry', async ({ page }) => {
   await page.unroute('**/search-index.json');
   await page.getByRole('button', { name: '重试' }).click();
   await page.getByRole('searchbox').fill('MCP');
+  const dialog = page.getByRole('dialog');
   await expect(
-    page.getByRole('dialog').getByRole('link', { name: /OpenMem/ }),
+    dialog.getByRole('link', { name: /^项目\s+OpenMem/ }),
+  ).toBeVisible();
+  await expect(
+    dialog.getByRole('link', { name: /^使用示例\s+OpenMem/ }),
   ).toBeVisible();
 });
 

@@ -1,4 +1,4 @@
-import { projects } from '../data/site';
+import { openMemExample, projects } from '../data/site';
 import { getPublishedPosts, postUrl } from '../lib/posts';
 
 export async function GET() {
@@ -9,10 +9,11 @@ export async function GET() {
       description: post.data.description,
       url: postUrl(post.id),
       kind: '文章',
+      tags: post.data.tags,
       text: [
         post.data.title,
         post.data.description,
-        ...(post.data.tags ?? []),
+        ...post.data.tags,
         post.body,
       ].join(' '),
     })),
@@ -21,7 +22,14 @@ export async function GET() {
       description: project.description,
       url: `/projects/#${project.title.toLowerCase()}`,
       kind: '项目',
+      tags: project.tags,
       text: [project.title, project.description, ...project.tags].join(' '),
     })),
+    {
+      ...openMemExample,
+      kind: '使用示例',
+      tags: ['OpenMem', 'MCP', 'GitHub Pages'],
+      text: 'openmemory_store openmemory_wakeup dist/ dist-test/ SQLite 发布目录 跨会话 项目记忆',
+    },
   ]);
 }

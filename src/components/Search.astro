@@ -52,7 +52,39 @@
     url: string;
     kind: string;
     text: string;
+    tags?: string[];
   };
+
+  const normalize = (value: string) =>
+    value.normalize('NFKC').toLowerCase().trim();
+
+  function prepareEntry(entry: SearchEntry) {
+    return {
+      entry,
+      title: normalize(entry.title),
+      tags: normalize((entry.tags ?? []).join(' ')),
+      description: normalize(entry.description),
+      body: normalize(entry.text),
+    };
+  }
+
+  // A term can match any field. Every term must match somewhere.
+  function relevance(
+    item: ReturnType<typeof prepareEntry>,
+    terms: string[],
+    query: string,
+  ) {
+    if (!terms.length) return 0;
+    let score = 0;
+    for (const term of terms) {
+      if (item.title.includes(term)) score += 8;
+      else if (item.tags.includes(term)) score += 4;
+      else if (item.description.includes(term)) score += 2;
+      else if (item.body.includes(term)) score += 1;
+      else return -1;
+    }
+    return score + (item.title === query ? 8 : 0);
+  }
 
   const trigger = document.getElementById('search-trigger');
   const dialog = document.getElementById('site-search');
@@ -71,23 +103,26 @@
     status &&
     results
   ) {
-    let entries: SearchEntry[] | null = null;
+    let entries: ReturnType<typeof prepareEntry>[] | null = null;
     let loading = false;
     let focusAfterClose: HTMLElement = trigger;
-    const normalize = (value: string) =>
-      value.normalize('NFKC').toLowerCase().trim();
-
     function render() {
-      if (!entries || !input || !results || !status) return;
-      const terms = normalize((input as HTMLInputElement).value)
-        .split(/\s+/u)
-        .filter(Boolean);
-      const matches = entries.filter((entry) => {
-        const content = normalize(
-          `${entry.title} ${entry.description} ${entry.text}`,
-        );
-        return terms.every((term) => content.includes(term));
-      });
+      if (
+        !entries ||
+        !(input instanceof HTMLInputElement) ||
+        !results ||
+        !status
+      )
+        return;
+      const query = normalize(input.value);
+      const terms = query.split(/\s+/u).filter(Boolean);
+      const matches = entries
+        .map((item) => ({
+          entry: item.entry,
+          score: relevance(item, terms, query),
+        }))
+        .filter(({ score }) => score >= 0)
+        .sort((a, b) => b.score - a.score);
       results.replaceChildren();
       status.textContent =
         matches.length === 0
@@ -95,9 +130,8 @@
           : terms.length
             ? `找到 ${matches.length} 项内容`
             : `全部 ${matches.length} 项内容`;
-      for (const entry of matches) {
+      for (const { entry } of matches) {
         const url = new URL(entry.url, window.location.origin);
-        if (url.protocol !== 'https:' && url.protocol !== 'http:') continue;
         const item = document.createElement('li');
         const link = document.createElement('a');
         link.href = url.href;
@@ -143,12 +177,24 @@
               ['title', 'description', 'url', 'kind', 'text'].every(
                 (key) => typeof entry[key] === 'string',
               ) &&
-              URL.canParse(entry.url, window.location.origin),
+              (entry.tags === undefined ||
+                (Array.isArray(entry.tags) &&
+                  entry.tags.every((tag: unknown) => typeof tag === 'string'))),
           )
         ) {
           throw new Error('Invalid search index');
         }
-        entries = data;
+        entries = (data as SearchEntry[])
+          .filter((entry) => {
+            try {
+              return ['http:', 'https:'].includes(
+                new URL(entry.url, location.origin).protocol,
+              );
+            } catch {
+              return false;
+            }
+          })
+          .map(prepareEntry);
         render();
       } catch {
         entries = null;
@@ -221,6 +267,37 @@
           event.clientY > bounds.bottom)
       )
         dialog.close();
+    });
+    dialog.addEventListener('keydown', (event) => {
+      if (
+        event.isComposing ||
+        event.ctrlKey ||
+        event.metaKey ||
+        event.altKey ||
+        event.shiftKey
+      )
+        return;
+      const links = [...results.querySelectorAll('a')];
+      if (!links.length) return;
+      if (event.target === input) {
+        if (event.key === 'ArrowDown') {
+          event.preventDefault();
+          links[0].focus();
+        } else if (event.key === 'Enter' && input.value.trim()) {
+          event.preventDefault();
+          links[0].click();
+        }
+        return;
+      }
+      const index = links.findIndex((link) => link === event.target);
+      if (index < 0) return;
+      if (event.key === 'ArrowUp') {
+        event.preventDefault();
+        (links[index - 1] ?? input).focus();
+      } else if (event.key === 'ArrowDown') {
+        event.preventDefault();
+        (links[index + 1] ?? links[index]).focus();
+      }
     });
     input.addEventListener('input', render);
     retry.addEventListener('click', () => {
@@ -384,7 +461,10 @@
     border-top: 1px solid var(--rule);
   }
   #search-results :global(a) {
-    display: block;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: baseline;
+    gap: 0.2rem 0.85rem;
     padding: 1rem 0.75rem;
     margin-inline: -0.75rem;
     color: var(--fog);
@@ -392,12 +472,13 @@
     overflow-wrap: anywhere;
     transition: background-color 300ms ease;
   }
-  #search-results :global(a:hover) {
+  #search-results :global(a:is(:hover, :focus-visible)) {
     background: var(--ink-soft);
   }
   #search-results :global(.result-kind) {
     display: block;
-    margin-bottom: 0.2rem;
+    align-self: start;
+    margin-top: 0.35rem;
     color: var(--gold);
     font: 0.7rem var(--font-mono);
     letter-spacing: 0.1em;
@@ -410,7 +491,8 @@
     color: var(--snow);
   }
   #search-results :global(p) {
-    margin: 0.3rem 0 0;
+    grid-column: 2;
+    margin: 0;
     color: var(--mist);
     font-size: 0.85rem;
     line-height: 1.7;

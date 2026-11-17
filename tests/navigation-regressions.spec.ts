@@ -85,3 +85,90 @@ test('the header recalculates its boundary when the viewport is resized', async 
   await page.setViewportSize({ width: 400, height: 900 });
   await expect(header).toHaveClass(/is-solid/);
 });
+
+test('adjacent articles follow the published timeline', async ({ page }) => {
+  await page.goto('/blog/fixture-recent/');
+  const neighbors = page.getByRole('navigation', { name: '相邻文章' });
+  await expect(neighbors.getByRole('link')).toHaveCount(1);
+  await neighbors.getByRole('link', { name: /较早一篇.*公开文章/ }).click();
+  await expect(page).toHaveURL('/blog/fixture-published/');
+  await expect(neighbors.getByRole('link')).toHaveCount(1);
+  await expect(
+    neighbors.getByRole('link', { name: /较新一篇.*近期文章/ }),
+  ).toHaveAttribute('href', '/blog/fixture-recent/');
+});
+
+test('a project title outranks body mentions and can be opened from the keyboard', async ({
+  page,
+}) => {
+  await page.goto('/projects/');
+  await page.getByRole('button', { name: '搜索站点' }).click();
+  const input = page.getByRole('searchbox');
+  const results = page
+    .getByRole('list', { name: '搜索结果' })
+    .getByRole('link');
+  await input.fill('ＯｐｅｎＭｅｍ');
+  await expect(results).toHaveCount(3);
+  await expect(results.nth(0)).toContainText('项目');
+  await expect(results.nth(1)).toContainText('OpenMem 跨会话示例');
+  await expect(results.nth(2)).toContainText('近期文章');
+  await input.press('ArrowDown');
+  await expect(results.nth(0)).toBeFocused();
+  await page.keyboard.press('ArrowDown');
+  await expect(results.nth(1)).toBeFocused();
+  await page.keyboard.press('ArrowUp');
+  await page.keyboard.press('ArrowUp');
+  await expect(input).toBeFocused();
+  await input.dispatchEvent('keydown', { key: 'Enter', isComposing: true });
+  await expect(input).toBeFocused();
+  await input.press('Enter');
+  await expect(page).toHaveURL('/projects/#openmem');
+  await expect(page.locator('#openmem')).toBeFocused();
+});
+
+test.describe('homepage without JavaScript', () => {
+  test.use({ javaScriptEnabled: false });
+
+  test('the project shortcut reaches the project shelf', async ({ page }) => {
+    await page.goto('/');
+    await page.getByRole('link', { name: '浏览项目', exact: true }).click();
+    await expect(page).toHaveURL('/#projects-title');
+    await expect(page.locator('#projects-title')).toBeInViewport();
+  });
+
+  test('the latest article shortcut opens the newest published article', async ({
+    page,
+  }) => {
+    await page.goto('/');
+    await page.getByRole('link', { name: /读最新文章/ }).click();
+    await expect(page).toHaveURL('/blog/fixture-recent/');
+  });
+});
+
+test('visitors can open the OpenMem example from either catalogue and from search', async ({
+  page,
+}) => {
+  for (const route of ['/', '/projects/']) {
+    await page.goto(route);
+    await expect(
+      page.getByRole('link', { name: 'OpenMem 跨会话示例', exact: true }),
+    ).toHaveAttribute('href', '/projects/openmem/');
+  }
+  await page.getByRole('button', { name: '搜索站点' }).click();
+  await page.getByRole('searchbox').fill('发布目录');
+  await page
+    .getByRole('dialog')
+    .getByRole('link', { name: /OpenMem 跨会话示例/ })
+    .click();
+  await expect(page).toHaveURL('/projects/openmem/');
+  await expect(
+    page.getByRole('heading', { name: 'OpenMem 跨会话示例' }),
+  ).toBeVisible();
+  await page.locator('summary').click();
+  await expect(page.locator('details pre')).toContainText(
+    '"observation_type": "decision"',
+  );
+  await expect(page.locator('pre[aria-label]')).toContainText(
+    'pages · publish_dir: dist/',
+  );
+});

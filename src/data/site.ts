@@ -35,6 +35,13 @@ export const navigation = [
   { href: '/about/', label: '关于' },
 ];
 
+export const openMemExample = {
+  title: 'OpenMem 跨会话示例',
+  description:
+    '用本站的 GitHub Pages 发布目录做一次实测：第一段会话写下约定，第二段会话读回目录和选择它的理由。',
+  url: '/projects/openmem/',
+};
+
 export const projects = [
   {
     title: 'OpenMem',
@@ -43,6 +50,7 @@ export const projects = [
     tags: ['TypeScript', 'MCP', 'AI Agent'],
     url: 'https://github.com/ayixiayi/OpenMem',
     motif: 'memory',
+    example: openMemExample,
   },
   {
     title: 'agentrc',

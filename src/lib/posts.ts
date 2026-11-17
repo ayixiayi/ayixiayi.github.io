@@ -3,7 +3,9 @@ import { getCollection } from 'astro:content';
 // Every public surface shares this boundary, including routes and machine-readable feeds.
 export async function getPublishedPosts() {
   return (await getCollection('blog', ({ data }) => !data.draft)).sort(
-    (a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf(),
+    (a, b) =>
+      b.data.pubDate.valueOf() - a.data.pubDate.valueOf() ||
+      (a.id < b.id ? -1 : a.id > b.id ? 1 : 0),
   );
 }
 
