@@ -452,14 +452,18 @@ generative-landscape:is([data-state='loading'], [data-state='painting'])
   color: var(--mist);
 }
 .latest-title {
-  display: block;
+  display: grid;
+  grid-template-columns: minmax(0, auto) 16px;
+  align-items: baseline;
+  justify-content: start;
+  gap: 8px;
   margin-top: 6px;
   font: 400 19px/1.5 var(--font-display);
   color: var(--snow);
   overflow-wrap: anywhere;
 }
 .latest-title svg {
-  margin-left: 6px;
+  align-self: center;
   color: var(--gold);
 }
 .hero-latest:hover .latest-title {

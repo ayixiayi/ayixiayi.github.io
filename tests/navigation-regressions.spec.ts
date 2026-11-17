@@ -128,12 +128,17 @@ test('a project title outranks body mentions and can be opened from the keyboard
 test.describe('homepage without JavaScript', () => {
   test.use({ javaScriptEnabled: false });
 
-  test('both shortcuts work and use the newest published article', async ({
+  test('the project shortcut reaches the project shelf', async ({ page }) => {
+    await page.goto('/');
+    await page.getByRole('link', { name: '浏览项目', exact: true }).click();
+    await expect(page).toHaveURL('/#projects-title');
+    await expect(page.locator('#projects-title')).toBeInViewport();
+  });
+
+  test('the latest article shortcut opens the newest published article', async ({
     page,
   }) => {
     await page.goto('/');
-    await page.getByRole('link', { name: '浏览项目', exact: true }).click();
-    await expect(page.locator('#projects-title')).toBeInViewport();
     await page.getByRole('link', { name: /读最新文章/ }).click();
     await expect(page).toHaveURL('/blog/fixture-recent/');
   });
