@@ -1,0 +1,114 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Chapter from '../../components/Chapter.astro';
+import Icon from '../../components/Icon.astro';
+import { openMemExample } from '../../data/site';
+
+const project = 'ayixiayi.github.io';
+const decision =
+  'GitHub Pages 只发布 dist/。dist-test/ 含有 Playwright 测试文章，不能作为发布目录。';
+const store = {
+  type: 'both',
+  project,
+  observation_type: 'decision',
+  content: decision,
+  facts: [{ subject: 'pages', predicate: 'publish_dir', object: 'dist/' }],
+};
+---
+
+<BaseLayout
+  title={openMemExample.title}
+  description={openMemExample.description}
+>
+  <main id="main">
+    <Chapter short focus="48% 38%">
+      <div class="article-header">
+        <a href="/projects/#openmem" class="text-link back-link">
+          <Icon name="back" size={16} /> 返回项目
+        </a>
+        <h1>{openMemExample.title}</h1>
+        <p>一次部署约定，换个会话还能找回来。</p>
+      </div>
+    </Chapter>
+    <div class="container article-grid example-body">
+      <article class="prose">
+        <p>
+          本站构建后有两个目录。<code>dist/</code> 装的是正式网站，
+          <code>dist-test/</code>{' '}
+          里还有测试文章。如果下一次会话要改部署流程，Agent
+          怎么知道该上传哪个目录，以及为什么？
+        </p>
+        <h2>第一次会话 · 记下发布约定</h2>
+        <p>
+          调用 <code>openmemory_store</code>，在项目 <code>{project}</code>{' '}
+          下同时保存一条事实和一条决策。事实记录目录，决策解释原因。
+        </p>
+        <blockquote>
+          <p>{decision}</p>
+        </blockquote>
+        <details>
+          <summary>查看这次写入的 MCP 参数</summary>
+          <pre><code>{JSON.stringify(store, null, 2)}</code></pre>
+        </details>
+
+        <h2>第二次会话 · 读回目录和理由</h2>
+        <p>
+          关闭第一个 MCP 进程，重新启动 OpenMem，沿用同一份 SQLite
+          数据库。新会话调用 <code>openmemory_wakeup</code>{' '}
+          时只传项目名，返回了下面两段内容。
+        </p>
+        <pre aria-label="OpenMem 实际返回的内容"><code>{`## Current Facts (1)
+- pages · publish_dir: dist/
+
+## Essential Context (1 memories)
+[DECISION]
+- ${decision}`}</code></pre>
+        <p>
+          把项目名换成另一个空项目后，这两条记录都没有出现。两次会话都使用本地
+          SQLite 和内置的合成嵌入。
+        </p>
+        <footer class="example-sources">
+          <a href="https://github.com/ayixiayi/OpenMem/tree/7751f4103e7251573e8f2db8ea5862bb0ca66059">
+            实测使用的 OpenMem 源码
+          </a>
+          <a href="https://github.com/ayixiayi/ayixiayi.github.io/blob/8c73c896bfe4d06547bc974c6e1e641dfc617d3f/.github/workflows/deploy.yml">
+            本站的部署配置
+          </a>
+        </footer>
+      </article>
+    </div>
+  </main>
+</BaseLayout>
+
+<style>
+  .example-body {
+    padding-bottom: clamp(56px, 8vw, 112px);
+  }
+  .prose {
+    width: 100%;
+  }
+  details {
+    border-block: 1px solid var(--rule);
+    padding: 8px 0;
+  }
+  summary {
+    cursor: pointer;
+    color: var(--gold);
+    font-size: 14px;
+  }
+  .prose pre {
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
+  .prose details pre {
+    margin: 12px 0;
+  }
+  .example-sources {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px 22px;
+    border-top: 1px solid var(--rule);
+    padding-top: 16px;
+    font-size: 14px;
+  }
+</style>

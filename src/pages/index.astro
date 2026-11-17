@@ -1,9 +1,9 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 import GenerativeLandscape from '../components/GenerativeLandscape.astro';
-import ProjectCard from '../components/ProjectCard.astro';
+import ProjectList from '../components/ProjectList.astro';
 import Icon from '../components/Icon.astro';
-import { projects, site } from '../data/site';
+import { site } from '../data/site';
 import {
   getPublishedPosts,
   postUrl,
@@ -69,11 +69,7 @@ const latest = posts[0];
             全部项目 <Icon name="arrow" size={16} />
           </a>
         </header>
-        <div class="work-list home-projects">
-          {projects.map((project, index) => (
-            <ProjectCard project={project} index={index} />
-          ))}
-        </div>
+        <ProjectList home />
       </section>
 
       <section class="plate" aria-labelledby="writing-title">

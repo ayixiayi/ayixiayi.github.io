@@ -1,8 +1,7 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 import Chapter from '../components/Chapter.astro';
-import ProjectCard from '../components/ProjectCard.astro';
-import { projects } from '../data/site';
+import ProjectList from '../components/ProjectList.astro';
 ---
 
 <BaseLayout title="项目" description="ayixiayi 的项目列表。">
@@ -12,11 +11,7 @@ import { projects } from '../data/site';
       <p>做过的和在做的东西。</p>
     </Chapter>
     <div class="container">
-      <div class="work-list">
-        {projects.map((project, index) => (
-          <ProjectCard project={project} index={index} />
-        ))}
-      </div>
+      <ProjectList />
     </div>
   </main>
 </BaseLayout>
