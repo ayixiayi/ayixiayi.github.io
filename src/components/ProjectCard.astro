@@ -1,117 +1,57 @@
 ---
-import type { projects } from '../data/site';
+import {
+  projectStatusLabels,
+  projectUrl,
+  type ProjectEntry,
+} from '../lib/projects';
 import Icon from './Icon.astro';
+import ProjectMotif from './ProjectMotif.astro';
+
 interface Props {
-  project: (typeof projects)[number];
+  project: ProjectEntry;
   index?: number;
 }
 const { project, index = 0 } = Astro.props;
-const email = project.url.startsWith('mailto:')
-  ? project.url.slice('mailto:'.length)
-  : undefined;
+const { data } = project;
 ---
 
-<a
+<article
   class="project-card"
-  id={project.title.toLowerCase()}
-  href={project.url}
-  target={email ? undefined : '_blank'}
-  rel={email ? undefined : 'noopener noreferrer'}
+  id={project.id}
+  tabindex="-1"
   data-reveal
   style={`--reveal-delay: ${index * 90}ms`}
 >
   <span class="work-no" aria-hidden="true">
     {String(index + 1).padStart(2, '0')}
   </span>
-  <div class:list={['project-visual', project.motif]} aria-hidden="true">
-    <svg viewBox="0 0 360 132" fill="none" focusable="false">
-      {project.motif === 'memory' && (
-        <g>
-          <g class="motif-rise">
-            <path d="m88 42 92-26 92 26-92 26Z" class="trace" pathLength="1" />
-            <circle cx="180" cy="42" r="4" class="trace" pathLength="1" />
-          </g>
-          <path d="m88 59 92 26 92-26" class="trace" pathLength="1" />
-          <g class="motif-sink">
-            <path d="m88 77 92 26 92-26" class="trace" pathLength="1" />
-          </g>
-          <path d="M88 42v35m92-9v35m92-61v35" stroke-dasharray="3 5" />
-          <circle cx="180" cy="68" r="2" class="trace" pathLength="1" />
-          <circle cx="180" cy="85" r="2" class="trace" pathLength="1" />
-        </g>
-      )}
-      {project.motif === 'orchestration' && (
-        <g>
-          <path
-            d="M165 66h-40l-23-27m93 27h40l23-27M165 66h-40l-23 27m93-27h40l23 27"
-            class="trace"
-            pathLength="1"
-          />
-          <path d="M180 50V26m0 56v24" class="trace" pathLength="1" />
-          <rect
-            x="165"
-            y="50"
-            width="30"
-            height="32"
-            rx="2"
-            class="trace"
-            pathLength="1"
-          />
-          <path d="m173 59 6 7-6 7m9 0h7" class="trace" pathLength="1" />
-          <circle cx="99" cy="35" r="5" class="trace" pathLength="1" />
-          <circle cx="261" cy="35" r="5" class="trace" pathLength="1" />
-          <circle cx="99" cy="97" r="5" class="trace" pathLength="1" />
-          <circle cx="261" cy="97" r="5" class="trace" pathLength="1" />
-          <circle cx="180" cy="21" r="5" class="trace" pathLength="1" />
-          <circle cx="180" cy="111" r="5" class="trace" pathLength="1" />
-          <path
-            class="motif-flow"
-            d="M120 35h35m50 0h35m-120 62h35m50 0h35"
-            stroke-dasharray="2 5"
-            opacity="0.4"
-          />
-        </g>
-      )}
-      {project.motif === 'music' && (
-        <g>
-          <g class="motif-disc">
-            <circle cx="166" cy="66" r="46" class="trace" pathLength="1" />
-            <circle cx="166" cy="66" r="36" class="trace" pathLength="1" />
-            <circle cx="166" cy="66" r="30" class="trace" pathLength="1" />
-            <circle cx="166" cy="66" r="12" class="trace" pathLength="1" />
-            <circle cx="166" cy="66" r="3" class="trace" pathLength="1" />
-            <path d="M166 24a42 42 0 0 1 36 21" opacity="0.5" />
-          </g>
-          <g class="motif-arm">
-            <path
-              d="M234 22v55l-20 24m14-79v53l-18 22"
-              class="trace"
-              pathLength="1"
-            />
-            <path d="m210 96 6 5-6 8-6-5Z" class="trace" pathLength="1" />
-          </g>
-        </g>
-      )}
-    </svg>
-  </div>
+  <ProjectMotif motif={data.motif} />
   <div class="work-body">
+    <p class="work-meta">
+      {projectStatusLabels[data.status]} · {data.period}
+    </p>
     <h3>
-      {project.title}
-      <span class="card-icon">
-        <Icon name={email ? 'mail' : 'external'} size={17} />
-      </span>
+      <a class="card-link" href={projectUrl(project)}>
+        {data.title}
+        <span class="card-icon" aria-hidden="true">
+          <Icon name="arrow" size={17} />
+        </span>
+      </a>
     </h3>
-    <p>{project.description}</p>
-    <div class="project-tags">
-      {project.tags.map((tag) => (
-        <span>{tag}</span>
+    <p>{data.summary}</p>
+    <ul class="project-tags" aria-label="技术标签">
+      {data.tags.map((tag) => (
+        <li>{tag}</li>
       ))}
-    </div>
-    {email && (
-      <div class="project-contact">
-        <p>如需查看代码或试用，请通过以下邮箱联系我。</p>
-        <span>{email}</span>
-      </div>
-    )}
+    </ul>
+    <a
+      class="repo-link"
+      href={data.repo}
+      target="_blank"
+      rel="noopener noreferrer"
+    >
+      <Icon name="external" size={14} /> GitHub
+      <span class="sr-only">（{data.title} 仓库，新窗口）</span>
+    </a>
   </div>
-</a>
+</article>

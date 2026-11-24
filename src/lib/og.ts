@@ -8,27 +8,50 @@ type Font = Parameters<typeof satori>[1]['fonts'][number];
 
 const require = createRequire(import.meta.url);
 const file = (path: string) => readFile(require.resolve(path));
+const SECTION_LABEL = 'II · 博客';
+const MAX_TITLE_CHARS = 64;
 
 /**
  * Noto Serif SC ships as ~100 unicode-range slices. Only the slices that
  * cover a card's text are loaded, read from the same stylesheet the site uses.
  */
-let slices: Promise<{ file: string; ranges: [number, number][] }[]>;
+let slices: Promise<{ file: string; ranges: [number, number][] }[]> | undefined;
 function cjkSlices() {
-  slices ??= file('@fontsource/noto-serif-sc/400.css').then((css) =>
-    [...css.toString().matchAll(/@font-face\s*{([^}]*)}/g)].map(([, rule]) => ({
-      file: rule.match(/url\(\.\/files\/([^)]+\.woff)\)/)![1],
-      ranges: rule
-        .match(/unicode-range:\s*([^;]+);/)![1]
-        .split(',')
-        .map((range) => {
-          const [from, to = from] = range.trim().slice(2).split('-');
-          return [parseInt(from, 16), parseInt(to, 16)] as [number, number];
-        }),
-    })),
-  );
+  if (!slices) {
+    slices = file('@fontsource/noto-serif-sc/400.css')
+      .then((css) =>
+        [...css.toString().matchAll(/@font-face\s*{([^}]*)}/g)].map(
+          ([, rule]) => {
+            const fileMatch = rule.match(/url\(\.\/files\/([^)]+\.woff)\)/);
+            const rangeMatch = rule.match(/unicode-range:\s*([^;]+);/);
+            if (!fileMatch || !rangeMatch) {
+              throw new Error(
+                'Unable to parse @fontsource/noto-serif-sc @font-face rule for OG card rendering.',
+              );
+            }
+            return {
+              file: fileMatch[1],
+              ranges: rangeMatch[1].split(',').map((range) => {
+                const [from, to = from] = range.trim().slice(2).split('-');
+                return [parseInt(from, 16), parseInt(to, 16)] as [
+                  number,
+                  number,
+                ];
+              }),
+            };
+          },
+        ),
+      )
+      .catch((error) => {
+        slices = undefined;
+        throw error;
+      });
+  }
   return slices;
 }
+
+const fontStack = (primary: string, fallbacks: string[]) =>
+  [primary, ...fallbacks].join(', ');
 
 /**
  * Satori keeps one font per name, so each slice gets its own family name and
@@ -59,7 +82,7 @@ async function fontsFor(text: string) {
       font(cjk[index], `@fontsource/noto-serif-sc/files/${slice}`),
     ),
   ]);
-  return { fonts, cjk: cjk.join(', ') };
+  return { fonts, cjk };
 }
 
 // A minimal element builder, so the card reads as a layout rather than JSON.
@@ -77,8 +100,17 @@ const h = (
 
 /** A 1200 × 630 share card: the painting, the post title and its date. */
 export async function shareCard(title: string, meta: string) {
-  const size = title.length > 22 ? 54 : 64;
-  const { fonts, cjk } = await fontsFor(`${title}${meta}`);
+  const chars = [...title.trim()];
+  const displayTitle =
+    chars.length > MAX_TITLE_CHARS
+      ? `${chars.slice(0, MAX_TITLE_CHARS - 1).join('')}…`
+      : chars.join('');
+  const size = chars.length > 40 ? 44 : chars.length > 22 ? 54 : 64;
+  const { fonts, cjk } = await fontsFor(
+    `${displayTitle}${meta}${SECTION_LABEL}`,
+  );
+  const displayFamily = fontStack('Instrument Serif', cjk);
+  const monoFamily = fontStack('Plex Mono', cjk);
   const card = h(
     'div',
     {
@@ -87,7 +119,7 @@ export async function shareCard(title: string, meta: string) {
       display: 'flex',
       position: 'relative',
       backgroundColor: '#0b1012',
-      fontFamily: `Instrument Serif, ${cjk}`,
+      fontFamily: displayFamily,
     },
     {
       type: 'img',
@@ -130,8 +162,8 @@ export async function shareCard(title: string, meta: string) {
         ),
         h(
           'div',
-          { fontFamily: 'Plex Mono', fontSize: 18, color: '#8e9ea4' },
-          'II · 博客',
+          { fontFamily: monoFamily, fontSize: 18, color: '#8e9ea4' },
+          SECTION_LABEL,
         ),
       ),
       h(
@@ -151,13 +183,13 @@ export async function shareCard(title: string, meta: string) {
             color: '#eaeff0',
             letterSpacing: '0.01em',
           },
-          title,
+          displayTitle,
         ),
         h(
           'div',
           {
             marginTop: 28,
-            fontFamily: `Plex Mono, ${cjk}`,
+            fontFamily: monoFamily,
             fontSize: 20,
             color: '#c9a767',
           },

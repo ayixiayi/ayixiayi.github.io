@@ -1,0 +1,93 @@
+---
+import { formatDate } from '../lib/posts';
+import type { NowData } from '../lib/projects';
+
+interface Props {
+  now: NowData;
+}
+const { now } = Astro.props;
+const updatedDate = new Date(`${now.updated}T00:00:00Z`);
+---
+
+<section class="plate now-plate" aria-labelledby="now-title">
+  <header class="plate-head" data-reveal>
+    <span class="plate-no plate-seal" aria-hidden="true">
+      附
+    </span>
+    <h2 id="now-title">近况</h2>
+    <p class="now-updated">
+      更新于 <time datetime={now.updated}>{formatDate(updatedDate)}</time>
+    </p>
+  </header>
+  <dl class="now-list">
+    {now.items.map((item, index) => (
+      <div
+        class="now-row"
+        data-reveal
+        style={`--reveal-delay: ${index * 90}ms`}
+      >
+        <dt>{item.label}</dt>
+        <dd>
+          <span class="now-title">{item.title}</span>
+          {item.detail && <span class="now-detail">{item.detail}</span>}
+        </dd>
+      </div>
+    ))}
+  </dl>
+</section>
+
+<style>
+  .plate-seal {
+    font: 400 26px / 1 var(--font-display-cjk);
+    font-style: normal;
+    color: var(--gold);
+    letter-spacing: 0;
+  }
+  .now-updated {
+    margin-left: auto;
+    font: 12px var(--font-mono);
+    color: var(--mist);
+  }
+  .now-list {
+    margin: 0;
+    border-top: 1px solid var(--rule);
+  }
+  .now-row {
+    display: grid;
+    grid-template-columns: 112px minmax(0, 1fr);
+    gap: 28px;
+    align-items: baseline;
+    padding: 26px 0;
+    border-bottom: 1px solid var(--rule);
+  }
+  .now-row dt {
+    font-size: 13px;
+    letter-spacing: 0.24em;
+    color: var(--mist);
+  }
+  .now-row dd {
+    margin: 0;
+    display: grid;
+    gap: 4px;
+  }
+  .now-title {
+    font: 400 22px / 1.5 var(--font-display-cjk);
+    color: var(--snow);
+  }
+  .now-detail {
+    font-size: 14px;
+    line-height: 1.8;
+    color: var(--mist);
+    max-width: 60ch;
+  }
+  @media (max-width: 800px) {
+    .now-row {
+      grid-template-columns: 1fr;
+      gap: 6px;
+      padding: 20px 0;
+    }
+    .now-title {
+      font-size: 19px;
+    }
+  }
+</style>

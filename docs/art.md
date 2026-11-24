@@ -1,6 +1,6 @@
 # 首页生成图像
 
-图像的构图参考 Theodor Kittelsen 的 _Far, far away Soria Moria Palace shimmered like Gold_：大面积冷色山地与远处的小型暖色建筑。实现使用 p5.js，不使用原画纹理或外部图像素材。
+图像的构图参考 Theodor Kittelsen 的 _Far, far away Soria Moria Palace shimmered like Gold_：大面积冷色山地与远处的小型暖色建筑。实现直接使用原生 Canvas 2D 与内置确定性噪声引擎，无第三方绘图库依赖，不使用原画纹理或外部图像素材。
 
 ## 构图与绘制
 
@@ -13,7 +13,7 @@
 
 ## 运行方式
 
-`randomSeed()` 与 `noiseSeed()` 使用同一种子。笔触批次按固定顺序执行，每帧处理有限工作，完成后调用 `noLoop()`。同一种子和尺寸在同一渲染环境下可复现；不保证不同浏览器的像素级一致性。
+随机数与 Perlin 噪声使用同一种子。笔触批次按固定顺序在 `requestAnimationFrame` 中按帧预算执行，完成后自动停止循环。同一种子和尺寸在同一渲染环境下可复现；不保证不同浏览器的像素级一致性。
 
 首页默认显示 `public/images/landscape.webp`。点击「重新生成」或访问有效的 `/?seed=…` 才加载引擎。种子范围为 1–999999；绘制完成后更新 URL，可复制当前地址复现图像。默认种子由 `src/art/landscape.ts` 的 `DEFAULT_SEED` 定义。
 

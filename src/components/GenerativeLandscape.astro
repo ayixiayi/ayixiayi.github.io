@@ -28,7 +28,7 @@ import Icon from './Icon.astro';
     </span>
     <div class="label-details">
       <p class="label-title">远方的宫殿</p>
-      <p class="label-medium">p5.js · 噪声与笔触</p>
+      <p class="label-medium">Canvas 2D · 噪声与笔触</p>
     </div>
     <div class="label-controls">
       <span data-art-status class="art-status" role="status">
@@ -62,14 +62,22 @@ import Icon from './Icon.astro';
 </generative-landscape>
 
 <script>
-  import type P5 from 'p5';
+  import type { LandscapeHandle } from '../art/landscape';
 
   class GenerativeLandscape extends HTMLElement {
-    private renderer?: P5;
+    private renderer?: LandscapeHandle;
     private disposed = false;
     private snapshotUrl?: string;
+    private controller?: AbortController;
+    private noteTimer = 0;
+    private pointerFrame = 0;
 
     connectedCallback() {
+      this.disposed = false;
+      this.controller?.abort();
+      this.controller = new AbortController();
+      const { signal } = this.controller;
+
       const surface = this.querySelector<HTMLElement>('.landscape-surface')!;
       const host = this.querySelector<HTMLElement>('[data-canvas-host]')!;
       const fallback = this.querySelector<HTMLImageElement>(
@@ -86,6 +94,7 @@ import Icon from './Icon.astro';
       let displayedSeed = seed;
       let fallbackSeed = seed;
       let busy = false;
+      let downloading = false;
       let restoreFocus = false;
 
       const setBusy = (value: boolean) => {
@@ -133,61 +142,81 @@ import Icon from './Icon.astro';
         history.replaceState(null, '', url);
       };
 
+      const handleRenderError = () => {
+        if (this.disposed) return;
+        this.renderer?.remove();
+        this.renderer = undefined;
+        host.replaceChildren();
+        displayedSeed = fallbackSeed;
+        this.dataset.state = 'error';
+        status.textContent = '生成失败，请重试';
+        updateSeedUrl();
+        setBusy(false);
+      };
+
       const render = async () => {
         if (busy) return;
+        window.clearTimeout(this.noteTimer);
+        this.noteTimer = 0;
         setBusy(true);
         try {
           await keepCurrentPainting();
         } catch {
           // Keep the last successfully decoded fallback and its seed together.
         }
+        if (this.disposed) return;
         this.dataset.state = 'loading';
         progress.style.transform = 'scaleX(0)';
         status.textContent = '正在生成…';
         try {
-          const [{ default: p5 }, { createLandscapeSketch }] =
-            await Promise.all([import('p5'), import('../art/landscape')]);
+          const { renderLandscape } = await import('../art/landscape');
           if (this.disposed) return;
           this.renderer?.remove();
+          this.renderer = undefined;
           host.replaceChildren();
-          this.renderer = new p5(
-            createLandscapeSketch({
-              seed,
-              width: 1600,
-              height: 1000,
-              onProgress: (done) => {
-                if (this.dataset.state === 'loading')
-                  this.dataset.state = 'painting';
-                progress.style.transform = `scaleX(${done})`;
-              },
-              onComplete: () => {
-                displayedSeed = seed;
-                this.dataset.state = 'ready';
-                status.textContent = `seed ${displayedSeed}`;
-                updateSeedUrl();
-                setBusy(false);
-              },
-            }),
-            host,
-          );
+          let failed = false;
+          const instance = renderLandscape(host, {
+            seed,
+            width: 1600,
+            height: 1000,
+            onProgress: (done) => {
+              if (this.disposed) return;
+              if (this.dataset.state === 'loading')
+                this.dataset.state = 'painting';
+              progress.style.transform = `scaleX(${done})`;
+            },
+            onComplete: () => {
+              if (this.disposed) return;
+              displayedSeed = seed;
+              this.dataset.state = 'ready';
+              status.textContent = `seed ${displayedSeed}`;
+              updateSeedUrl();
+              setBusy(false);
+            },
+            onError: () => {
+              failed = true;
+              handleRenderError();
+            },
+          });
+          if (failed || this.disposed) {
+            instance.remove();
+            host.replaceChildren();
+          } else {
+            this.renderer = instance;
+          }
         } catch {
-          this.renderer?.remove();
-          displayedSeed = fallbackSeed;
-          this.dataset.state = 'error';
-          status.textContent = '生成失败，请重试';
-          updateSeedUrl();
-          setBusy(false);
+          handleRenderError();
         }
       };
 
       // Brief confirmations share the status line, then hand it back to the seed.
-      let noteTimer = 0;
       const note = (message: string) => {
         if (busy) return;
-        window.clearTimeout(noteTimer);
+        window.clearTimeout(this.noteTimer);
         status.textContent = message;
-        noteTimer = window.setTimeout(() => {
-          if (!busy)
+        this.noteTimer = window.setTimeout(() => {
+          this.noteTimer = 0;
+          if (!busy && !this.disposed)
             status.textContent =
               this.dataset.state === 'error'
                 ? '生成失败，请重试'
@@ -196,53 +225,77 @@ import Icon from './Icon.astro';
       };
 
       // The poster is the default seed, so a link always reproduces what is shown.
-      copy.addEventListener('click', async () => {
-        if (busy) return;
-        const url = new URL('/', location.origin);
-        url.searchParams.set('seed', String(displayedSeed));
-        try {
-          await navigator.clipboard.writeText(url.href);
-          note('已复制链接');
-        } catch {
-          note(url.href);
-        }
-      });
+      copy.addEventListener(
+        'click',
+        async () => {
+          if (busy) return;
+          const url = new URL('/', location.origin);
+          url.searchParams.set('seed', String(displayedSeed));
+          try {
+            await navigator.clipboard.writeText(url.href);
+            note('已复制链接');
+          } catch {
+            note(url.href);
+          }
+        },
+        { signal },
+      );
 
-      download.addEventListener('click', async () => {
-        if (busy) return;
-        const canvas = host.querySelector('canvas');
-        const downloadSeed = displayedSeed;
-        const link = document.createElement('a');
-        let objectUrl: string | undefined;
-        if (canvas && this.dataset.state === 'ready') {
-          const blob = await new Promise<Blob | null>((resolve) =>
-            canvas.toBlob(resolve, 'image/png'),
-          );
-          if (!blob) return note('下载失败，请重试');
-          objectUrl = URL.createObjectURL(blob);
-          link.href = objectUrl;
-          link.download = `ayixiayi-seed-${downloadSeed}.png`;
-        } else {
-          link.href = fallback.src;
-          link.download = `ayixiayi-seed-${downloadSeed}.webp`;
-        }
-        link.click();
-        if (objectUrl) {
-          const url = objectUrl;
-          window.setTimeout(() => URL.revokeObjectURL(url), 1000);
-        }
-      });
+      download.addEventListener(
+        'click',
+        async () => {
+          if (busy || downloading) return;
+          downloading = true;
+          let objectUrl: string | undefined;
+          try {
+            const canvas = host.querySelector('canvas');
+            const downloadSeed = displayedSeed;
+            const link = document.createElement('a');
+            if (canvas && this.dataset.state === 'ready') {
+              const blob = await new Promise<Blob | null>((resolve) =>
+                canvas.toBlob(resolve, 'image/png'),
+              );
+              if (!blob) {
+                note('下载失败，请重试');
+                return;
+              }
+              objectUrl = URL.createObjectURL(blob);
+              link.href = objectUrl;
+              link.download = `ayixiayi-seed-${downloadSeed}.png`;
+            } else {
+              link.href = fallback.src;
+              link.download = `ayixiayi-seed-${downloadSeed}.webp`;
+            }
+            link.click();
+            if (objectUrl) {
+              const url = objectUrl;
+              objectUrl = undefined;
+              window.setTimeout(() => URL.revokeObjectURL(url), 30000);
+            }
+          } catch {
+            if (objectUrl) URL.revokeObjectURL(objectUrl);
+            note('下载失败，请重试');
+          } finally {
+            downloading = false;
+          }
+        },
+        { signal },
+      );
 
       random.hidden = false;
       actions.hidden = false;
-      random.addEventListener('click', () => {
-        if (busy) return;
-        seed =
-          ((seed + (crypto.getRandomValues(new Uint32Array(1))[0] % 999998)) %
-            999999) +
-          1;
-        void render();
-      });
+      random.addEventListener(
+        'click',
+        () => {
+          if (busy) return;
+          seed =
+            ((seed + (crypto.getRandomValues(new Uint32Array(1))[0] % 999998)) %
+              999999) +
+            1;
+          void render();
+        },
+        { signal },
+      );
 
       // A soft gallery light follows the pointer across the canvas.
       if (
@@ -250,22 +303,28 @@ import Icon from './Icon.astro';
           '(hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference)',
         ).matches
       ) {
-        let frame = 0;
-        surface.addEventListener('pointermove', (event) => {
-          if (frame) return;
-          frame = requestAnimationFrame(() => {
-            frame = 0;
-            const box = surface.getBoundingClientRect();
-            surface.style.setProperty(
-              '--light-x',
-              `${(((event.clientX - box.left) / box.width) * 100).toFixed(1)}%`,
-            );
-            surface.style.setProperty(
-              '--light-y',
-              `${(((event.clientY - box.top) / box.height) * 100).toFixed(1)}%`,
-            );
-          });
-        });
+        surface.addEventListener(
+          'pointermove',
+          (event) => {
+            if (this.pointerFrame) return;
+            const { clientX, clientY } = event;
+            this.pointerFrame = requestAnimationFrame(() => {
+              this.pointerFrame = 0;
+              if (this.disposed) return;
+              const box = surface.getBoundingClientRect();
+              if (!box.width || !box.height) return;
+              surface.style.setProperty(
+                '--light-x',
+                `${(((clientX - box.left) / box.width) * 100).toFixed(1)}%`,
+              );
+              surface.style.setProperty(
+                '--light-y',
+                `${(((clientY - box.top) / box.height) * 100).toFixed(1)}%`,
+              );
+            });
+          },
+          { signal },
+        );
       }
 
       const requestedSeed = Number(
@@ -283,8 +342,20 @@ import Icon from './Icon.astro';
 
     disconnectedCallback() {
       this.disposed = true;
+      this.controller?.abort();
+      this.controller = undefined;
+      window.clearTimeout(this.noteTimer);
+      this.noteTimer = 0;
+      if (this.pointerFrame) {
+        cancelAnimationFrame(this.pointerFrame);
+        this.pointerFrame = 0;
+      }
       this.renderer?.remove();
-      if (this.snapshotUrl) URL.revokeObjectURL(this.snapshotUrl);
+      this.renderer = undefined;
+      if (this.snapshotUrl) {
+        URL.revokeObjectURL(this.snapshotUrl);
+        this.snapshotUrl = undefined;
+      }
     }
   }
 

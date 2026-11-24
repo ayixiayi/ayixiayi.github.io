@@ -1,0 +1,149 @@
+---
+import { formatDate } from '../lib/posts';
+import Icon from './Icon.astro';
+import PostTags from './PostTags.astro';
+
+interface Props {
+  pubDate: Date;
+  updatedDate?: Date;
+  tags: string[];
+}
+
+const { pubDate, updatedDate, tags } = Astro.props;
+---
+
+<aside class="colophon" aria-label="题跋">
+  <p class="colophon-mark">题跋</p>
+  <div class="colophon-grid">
+    <dl class="colophon-meta">
+      <div class="colophon-row">
+        <dt>发布</dt>
+        <dd>{formatDate(pubDate)}</dd>
+      </div>
+      {updatedDate && (
+        <div class="colophon-row">
+          <dt>更新</dt>
+          <dd>{formatDate(updatedDate)}</dd>
+        </div>
+      )}
+      {tags.length > 0 && (
+        <div class="colophon-row">
+          <dt>标签</dt>
+          <dd>
+            <PostTags tags={tags} />
+          </dd>
+        </div>
+      )}
+    </dl>
+    <div class="colophon-actions">
+      <button type="button" class="text-link" data-copy-link>
+        <Icon name="link" size={15} />
+        <span data-copy-label>复制链接</span>
+      </button>
+      <span
+        class="sr-only"
+        role="status"
+        aria-live="polite"
+        data-copy-status
+      ></span>
+      <a href="/rss.xml" class="text-link">
+        <Icon name="rss" size={15} />
+        RSS 订阅
+      </a>
+    </div>
+  </div>
+</aside>
+
+<script>
+  const button = document.querySelector<HTMLButtonElement>('[data-copy-link]');
+  const label = button?.querySelector<HTMLElement>('[data-copy-label]');
+  const live = document.querySelector<HTMLElement>('[data-copy-status]');
+
+  if (button && label) {
+    let resetTimer = 0;
+    button.addEventListener('click', async () => {
+      window.clearTimeout(resetTimer);
+      try {
+        await navigator.clipboard.writeText(window.location.href);
+        label.textContent = '已复制';
+        if (live) live.textContent = '已复制文章链接';
+      } catch {
+        label.textContent = '复制失败';
+        if (live) live.textContent = '无法访问剪贴板，请手动复制地址栏链接';
+      }
+      resetTimer = window.setTimeout(() => {
+        label.textContent = '复制链接';
+        if (live) live.textContent = '';
+      }, 2000);
+    });
+  }
+</script>
+
+<style>
+  .colophon {
+    margin: 56px 0 0 calc(var(--rail) + var(--gap));
+    max-width: 720px;
+    padding: 28px 0;
+    border-top: 1px solid var(--rule-strong);
+  }
+  .colophon-mark {
+    position: relative;
+    margin: 0 0 18px;
+    padding-top: 12px;
+    font: 400 15px/1.4 var(--font-display-cjk, var(--font-display));
+    letter-spacing: 0.3em;
+    color: var(--gold);
+  }
+  .colophon-mark::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 24px;
+    height: 1px;
+    background: var(--gold);
+  }
+  .colophon-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 16px 32px;
+    align-items: start;
+  }
+  .colophon-meta {
+    margin: 0;
+    display: grid;
+    gap: 6px;
+    font: 12px/1.8 var(--font-mono);
+    color: var(--mist);
+  }
+  .colophon-row {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 16px;
+    align-items: baseline;
+  }
+  .colophon-meta dt {
+    color: var(--mist);
+  }
+  .colophon-meta dd {
+    margin: 0;
+    color: var(--fog);
+  }
+  .colophon-meta :global(.post-tags) {
+    margin: 0;
+  }
+  .colophon-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 20px;
+  }
+  @media (max-width: 800px) {
+    .colophon {
+      margin-left: 0;
+    }
+    .colophon-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>

@@ -28,7 +28,9 @@
       关闭
     </button>
   </div>
-  <label for="search-input">搜索内容</label>
+  <label for="search-input" class="sr-only">
+    搜索内容
+  </label>
   <input
     id="search-input"
     type="search"
@@ -36,9 +38,14 @@
     autocomplete="off"
     autofocus
   />
-  <p id="search-status" role="status" aria-live="polite">
-    输入关键词
-  </p>
+  <div class="search-meta">
+    <p id="search-status" role="status" aria-live="polite">
+      输入关键词
+    </p>
+    <p class="search-hint" aria-hidden="true">
+      Esc 关闭 · ↑↓ 选择
+    </p>
+  </div>
   <button id="search-retry" type="button" hidden>
     重试
   </button>
@@ -145,9 +152,10 @@
         const title = document.createElement('strong');
         title.textContent = entry.title;
         const description = document.createElement('p');
+        const chars = Array.from(entry.description);
         description.textContent =
-          entry.description.length > 180
-            ? `${entry.description.slice(0, 180)}…`
+          chars.length > 180
+            ? `${chars.slice(0, 180).join('')}…`
             : entry.description;
         link.append(kind, title, description);
         item.append(link);
@@ -243,9 +251,13 @@
         !link.hash
       )
         return;
-      const destination = document.getElementById(
-        decodeURIComponent(link.hash.slice(1)),
-      );
+      let id = '';
+      try {
+        id = decodeURIComponent(link.hash.slice(1));
+      } catch {
+        return;
+      }
+      const destination = document.getElementById(id);
       if (!destination) return;
       focusAfterClose = destination;
       dialog.close();
@@ -304,9 +316,15 @@
       void loadIndex();
     });
     document.addEventListener('keydown', (event) => {
-      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
+      if (
+        (event.metaKey || event.ctrlKey) &&
+        !event.altKey &&
+        !event.shiftKey &&
+        event.key.toLowerCase() === 'k'
+      ) {
         event.preventDefault();
-        openSearch();
+        if (dialog.open) dialog.close();
+        else openSearch();
       }
     });
     trigger.hidden = false;
@@ -359,19 +377,19 @@
     box-shadow: 0 50px 120px -40px rgb(0 0 0 / 80%);
   }
   dialog[open] {
-    animation: dialog-in 560ms var(--ease-out);
+    animation: dialog-in var(--dur-2) var(--ease-out);
   }
   dialog::backdrop {
-    background: rgb(6 10 12 / 76%);
-    backdrop-filter: blur(8px);
+    background: rgb(6 10 12 / 84%);
+    backdrop-filter: none;
   }
   dialog[open]::backdrop {
-    animation: backdrop-in 560ms ease;
+    animation: backdrop-in var(--dur-2) ease;
   }
   @keyframes dialog-in {
     from {
       opacity: 0;
-      translate: 0 -18px;
+      translate: 0 -8px;
     }
   }
   @keyframes backdrop-in {
@@ -382,7 +400,7 @@
   @keyframes result-in {
     from {
       opacity: 0;
-      translate: 0 8px;
+      translate: 0 6px;
     }
   }
   .search-heading {
@@ -394,7 +412,7 @@
   }
   h2 {
     margin: 0;
-    font-family: var(--font-display);
+    font-family: var(--font-display-cjk);
     font-size: 1.6rem;
     font-weight: 400;
     letter-spacing: 0.1em;
@@ -411,19 +429,13 @@
     font-size: 0.8rem;
     cursor: pointer;
     transition:
-      color 300ms ease,
-      border-color 300ms ease;
+      color var(--dur-1) ease,
+      border-color var(--dur-1) ease;
   }
   #search-close:hover,
   #search-retry:hover {
     color: var(--gold);
     border-color: var(--gold);
-  }
-  label {
-    display: block;
-    margin-bottom: 0.25rem;
-    color: var(--mist);
-    font-size: 0.8rem;
   }
   input {
     box-sizing: border-box;
@@ -434,18 +446,34 @@
     border-radius: 0;
     background: transparent;
     color: var(--snow);
-    font-family: var(--font-display);
+    font-family: var(--font-display-cjk);
     font-size: 1.75rem;
-    transition: border-color 400ms ease;
+    transition: border-color var(--dur-2) ease;
+  }
+  input::-webkit-search-cancel-button {
+    appearance: none;
   }
   input:focus {
     border-bottom-color: var(--gold);
   }
+  input:focus-visible {
+    outline: none;
+    border-bottom: 2px solid var(--gold);
+    padding-bottom: calc(0.75rem - 1px);
+  }
   input::placeholder {
     color: var(--mist);
   }
-  #search-status {
+  .search-meta {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 1rem;
     margin: 1rem 0 0.5rem;
+  }
+  #search-status,
+  .search-hint {
+    margin: 0;
     color: var(--mist);
     font: 0.75rem var(--font-mono);
   }
@@ -455,7 +483,7 @@
     list-style: none;
   }
   #search-results :global(li) {
-    animation: result-in 460ms var(--ease-out) backwards;
+    animation: result-in 200ms var(--ease-out) backwards;
   }
   #search-results :global(li + li) {
     border-top: 1px solid var(--rule);
@@ -470,7 +498,7 @@
     color: var(--fog);
     text-decoration: none;
     overflow-wrap: anywhere;
-    transition: background-color 300ms ease;
+    transition: background-color var(--dur-1) ease;
   }
   #search-results :global(a:is(:hover, :focus-visible)) {
     background: var(--ink-soft);
@@ -484,7 +512,7 @@
     letter-spacing: 0.1em;
   }
   #search-results :global(strong) {
-    font-family: var(--font-display);
+    font-family: var(--font-display-cjk);
     font-size: 1.3rem;
     font-weight: 400;
     line-height: 1.5;
@@ -498,7 +526,6 @@
     line-height: 1.7;
   }
   button:focus-visible,
-  input:focus-visible,
   #search-results :global(a:focus-visible) {
     outline: 2px solid var(--gold);
     outline-offset: 3px;
@@ -511,6 +538,9 @@
     }
     input {
       font-size: 1.4rem;
+    }
+    .search-hint {
+      display: none;
     }
   }
 </style>

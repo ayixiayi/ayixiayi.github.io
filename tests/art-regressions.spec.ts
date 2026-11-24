@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import type P5 from 'p5';
+import type { LandscapeHandle } from '../src/art/landscape';
 
 async function captureArtActions(page: Page) {
   await page.evaluate(() => {
@@ -21,7 +21,7 @@ async function captureArtActions(page: Page) {
 test('a failed seed request shares and downloads the displayed poster', async ({
   page,
 }) => {
-  await page.route(/\/p5[.-].*\.js$/, (route) => route.abort());
+  await page.route(/\/landscape[.-].*\.js$/, (route) => route.abort());
   await page.goto('/?seed=1971');
   const art = page.locator('generative-landscape');
   await expect(art).toHaveAttribute('data-state', 'error');
@@ -103,7 +103,7 @@ test('copy cannot replace the generation status while the engine loads', async (
   const held = new Promise<void>((resolve) => {
     release = resolve;
   });
-  await page.route(/\/p5[.-].*\.js$/, async (route) => {
+  await page.route(/\/landscape[.-].*\.js$/, async (route) => {
     await held;
     await route.abort();
   });
@@ -131,7 +131,7 @@ test('the same seed is pixel-identical across different drawing frame budgets', 
 }) => {
   const modules: string[] = [];
   page.on('request', (request) => {
-    if (/\/(?:p5|landscape)[.-].*\.js$/.test(request.url()))
+    if (/\/landscape[.-].*\.js$/.test(request.url()))
       modules.push(request.url());
   });
   await page.goto('/?seed=1847');
@@ -140,59 +140,35 @@ test('the same seed is pixel-identical across different drawing frame budgets', 
     'ready',
     { timeout: 20000 },
   );
-  const p5Url = modules.find((url) => /\/p5[.-]/.test(url))!;
   const landscapeUrl = modules.find((url) => /\/landscape[.-]/.test(url))!;
-  expect(p5Url).toBeTruthy();
   expect(landscapeUrl).toBeTruthy();
   const identical = await page.evaluate(
-    async ({ p5Url, landscapeUrl }) => {
-      const [{ default: P5Constructor }, { createLandscapeSketch }] =
-        await Promise.all([import(p5Url), import(landscapeUrl)]);
-      const nativeNow = performance.now.bind(performance);
-      let drawing = false;
-      let clock = 0;
-      let increment = 0;
-      // Only the sketch's work budget is changed; p5's frame scheduler keeps real time.
-      performance.now = () => (drawing ? (clock += increment) : nativeNow());
-      const render = async (budgetIncrement: number) => {
-        increment = budgetIncrement;
-        clock = 0;
+    async ({ landscapeUrl }) => {
+      const { renderLandscape } = await import(landscapeUrl);
+      const render = async (frameBudgetMs: number) => {
         const host = document.createElement('div');
         document.body.append(host);
-        let renderer: P5 | undefined;
+        let handle: LandscapeHandle | undefined;
         try {
-          return await new Promise<string>((resolve) => {
-            renderer = new P5Constructor((p: P5) => {
-              createLandscapeSketch({
-                seed: 1847,
-                width: 1600,
-                height: 1000,
-                onComplete: () =>
-                  resolve(host.querySelector('canvas')!.toDataURL()),
-              })(p);
-              const draw = p.draw;
-              p.draw = () => {
-                drawing = true;
-                try {
-                  draw();
-                } finally {
-                  drawing = false;
-                }
-              };
-            }, host);
+          return await new Promise<string>((resolve, reject) => {
+            handle = renderLandscape(host, {
+              seed: 1847,
+              width: 1600,
+              height: 1000,
+              frameBudgetMs,
+              onComplete: () =>
+                resolve(host.querySelector('canvas')!.toDataURL()),
+              onError: reject,
+            });
           });
         } finally {
-          renderer?.remove();
+          handle?.remove();
           host.remove();
         }
       };
-      try {
-        return (await render(0)) === (await render(12));
-      } finally {
-        performance.now = nativeNow;
-      }
+      return (await render(0)) === (await render(12));
     },
-    { p5Url, landscapeUrl },
+    { landscapeUrl },
   );
   expect(identical).toBe(true);
 });

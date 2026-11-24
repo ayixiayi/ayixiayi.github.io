@@ -3,18 +3,29 @@ import BaseLayout from '../../../layouts/BaseLayout.astro';
 import Chapter from '../../../components/Chapter.astro';
 import BlogList from '../../../components/BlogList.astro';
 import TagFilter from '../../../components/TagFilter.astro';
-import { getPublishedPosts, tagCounts, tagSlug } from '../../../lib/posts';
+import {
+  getPublishedPosts,
+  tagCounts,
+  tagKey,
+  tagSlug,
+} from '../../../lib/posts';
 
 export async function getStaticPaths() {
   const posts = await getPublishedPosts();
-  return tagCounts(posts).map(({ tag }) => ({
-    params: { tag: tagSlug(tag) },
-    props: {
-      tag,
-      posts: posts.filter((post) => post.data.tags.includes(tag)),
-      tags: tagCounts(posts),
-    },
-  }));
+  const tags = tagCounts(posts);
+  return tags.map(({ tag }) => {
+    const key = tagKey(tag);
+    return {
+      params: { tag: tagSlug(tag) },
+      props: {
+        tag,
+        posts: posts.filter((post) =>
+          post.data.tags.some((entry) => tagKey(entry) === key),
+        ),
+        tags,
+      },
+    };
+  });
 }
 
 const { tag, posts, tags } = Astro.props;

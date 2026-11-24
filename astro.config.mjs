@@ -7,6 +7,11 @@ export default defineConfig({
   output: 'static',
   trailingSlash: 'always',
   compressHTML: true,
+  prerenderConflictBehavior: 'error',
+  prefetch: {
+    prefetchAll: true,
+    defaultStrategy: 'hover',
+  },
   integrations: [sitemap({ filter: (page) => !page.endsWith('/404/') })],
   devToolbar: { enabled: false },
 });

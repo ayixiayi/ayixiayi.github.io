@@ -155,14 +155,18 @@ test('the homepage does not load the drawing engine until requested', async ({
       ),
   ).toBe(true);
   await expect(page.locator('canvas')).toHaveCount(0);
-  expect(requests.filter((url) => /\/p5[.-]/.test(url))).toEqual([]);
+  expect(
+    requests.filter((url) => /\/landscape[.-].*\.m?js(\?|$)/.test(url)),
+  ).toEqual([]);
   await page.getByRole('button', { name: '重新生成图像' }).click();
   await expect(page.locator('generative-landscape')).toHaveAttribute(
     'data-state',
     'ready',
     { timeout: 20000 },
   );
-  expect(requests.some((url) => /\/p5[.-]/.test(url))).toBe(true);
+  expect(
+    requests.some((url) => /\/landscape[.-].*\.m?js(\?|$)/.test(url)),
+  ).toBe(true);
   const first = await page
     .locator('canvas')
     .evaluate((canvas: HTMLCanvasElement) => canvas.toDataURL());

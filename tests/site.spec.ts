@@ -16,11 +16,11 @@ test('navigation is limited to content sections without decorative copy', async 
   await page.goto('/');
   await expect(
     page.getByRole('navigation', { name: '主导航' }).getByRole('link'),
-  ).toHaveText(['项目', '博客', '关于']);
+  ).toHaveText(['项目', '博客', '画册', '关于']);
   await expect(page).toHaveTitle('ayixiayi');
   await expect(
     page.locator('main').getByRole('heading', { level: 2 }),
-  ).toHaveText(['项目', '博客']);
+  ).toHaveText(['项目', '博客', '近况']);
   await expect(page.locator('footer')).not.toContainText('慢慢探索');
   await expect(
     page.locator('main').getByRole('link', { name: /画室/ }),
@@ -31,9 +31,9 @@ test('project illustrations are decorative and preserve each card destination', 
   page,
 }) => {
   const projects = [
-    ['OpenMem', 'https://github.com/ayixiayi/OpenMem'],
-    ['agentrc', 'https://github.com/ayixiayi/agentrc'],
-    ['MusicBarOs', 'https://github.com/ayixiayi/MusicBarOs'],
+    ['OpenMem', 'openmem', 'https://github.com/ayixiayi/OpenMem'],
+    ['agentrc', 'agentrc', 'https://github.com/ayixiayi/agentrc'],
+    ['MusicBarOs', 'musicbaros', 'https://github.com/ayixiayi/MusicBarOs'],
   ];
   for (const route of ['/', '/projects/']) {
     await page.goto(route);
@@ -41,19 +41,22 @@ test('project illustrations are decorative and preserve each card destination', 
     await expect(page.locator('.project-card h3')).toHaveText(
       projects.map(([title]) => title),
     );
-    for (const [title, url] of projects) {
+    for (const [title, slug, url] of projects) {
       const card = page
         .locator('.project-card')
         .filter({ has: page.getByRole('heading', { name: title }) });
-      await expect(card).toHaveAttribute('href', url);
-      await expect(card).toHaveAccessibleName(new RegExp(`^${title}`));
+      const cardLink = card.locator('.card-link');
+      await expect(cardLink).toHaveAttribute('href', `/projects/${slug}/`);
+      await expect(cardLink).toHaveAccessibleName(new RegExp(`^${title}`));
       await expect(card.locator('.project-visual')).toHaveAttribute(
         'aria-hidden',
         'true',
       );
       await expect(card.locator('.project-visual svg')).toBeVisible();
-      await expect(card).toHaveAttribute('target', '_blank');
-      await expect(card).toHaveAttribute('rel', 'noopener noreferrer');
+      const repoLink = card.locator('.repo-link');
+      await expect(repoLink).toHaveAttribute('href', url);
+      await expect(repoLink).toHaveAttribute('target', '_blank');
+      await expect(repoLink).toHaveAttribute('rel', 'noopener noreferrer');
     }
     // OpenMem is partly derived from OpenMemory; its NOTICE credits it, and so does the card.
     await expect(page.locator('#openmem')).toContainText(
@@ -62,9 +65,7 @@ test('project illustrations are decorative and preserve each card destination', 
   }
 });
 
-test('project search leads to the card on the projects page', async ({
-  page,
-}) => {
+test('project search leads to the project case study', async ({ page }) => {
   await page.goto('/');
   await page.getByRole('button', { name: '搜索站点' }).click();
   await page.getByRole('searchbox').fill('agentrc');
@@ -73,19 +74,17 @@ test('project search leads to the card on the projects page', async ({
     .getByRole('link', { name: /agentrc/ });
   await expect(result).toHaveAttribute(
     'href',
-    new URL('/projects/#agentrc', page.url()).href,
+    new URL('/projects/agentrc/', page.url()).href,
   );
   await result.click();
-  await expect(page).toHaveURL('/projects/#agentrc');
-  const card = page.locator('#agentrc');
-  await expect(card).toHaveAttribute(
-    'href',
-    'https://github.com/ayixiayi/agentrc',
-  );
-  await expect(card).toBeInViewport();
+  await expect(page).toHaveURL('/projects/agentrc/');
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('agentrc');
+  await expect(
+    page.locator('.case-facts a[href="https://github.com/ayixiayi/agentrc"]'),
+  ).toBeVisible();
 });
 
-test('project-page search closes the dialog and focuses the destination card', async ({
+test('search closes cleanly on Escape and restores trigger focus', async ({
   page,
 }) => {
   await page.goto('/projects/');
@@ -93,18 +92,13 @@ test('project-page search closes the dialog and focuses the destination card', a
   const dialog = page.getByRole('dialog');
   await trigger.click();
   await page.getByRole('searchbox').fill('agentrc');
-  await dialog.getByRole('link', { name: /agentrc/ }).focus();
-  await page.keyboard.press('Enter');
-  await expect(dialog).not.toBeVisible();
-  await expect(page).toHaveURL('/projects/#agentrc');
-  await expect(page.locator('#agentrc')).toBeFocused();
-  await expect(page.locator('#agentrc')).toBeInViewport();
-  await trigger.click();
+  await expect(dialog.getByRole('link', { name: /agentrc/ })).toBeVisible();
   await page.keyboard.press('Escape');
+  await expect(dialog).not.toBeVisible();
   await expect(trigger).toBeFocused();
 });
 
-test('About identifies the artwork inspiration and explains how to revisit a generated landscape', async ({
+test('About identifies the artwork inspiration, explains how to revisit a generated landscape, and renders the chronology', async ({
   page,
 }) => {
   await page.goto('/about/');
@@ -122,13 +116,21 @@ test('About identifies the artwork inspiration and explains how to revisit a gen
     'href',
     'https://www.nasjonalmuseet.no/en/collection/object/NG.M.00546',
   );
-  await expect(
-    prose.getByRole('link', { name: 'p5.js', exact: true }),
-  ).toHaveAttribute('href', 'https://p5js.org/');
+  await expect(prose).toContainText('Canvas 2D');
   await expect(prose).toContainText('点击首页的「重新生成」');
   await expect(prose).toContainText(
     '保留生成后的页面地址，可以再次打开同一构图',
   );
+  const chronology = page.locator('.chronology');
+  await expect(
+    chronology.getByRole('heading', { level: 2, name: '年表' }),
+  ).toBeVisible();
+  await expect(
+    chronology.locator('.chrono-item.is-project').first(),
+  ).toBeVisible();
+  await expect(
+    chronology.locator('.chrono-item.is-post').first(),
+  ).toBeVisible();
 });
 
 test('the About illustration sits beside the text or below it on small screens', async ({
@@ -268,9 +270,6 @@ test('search reports a failed index fetch and can retry', async ({ page }) => {
   await expect(
     dialog.getByRole('link', { name: /^项目\s+OpenMem/ }),
   ).toBeVisible();
-  await expect(
-    dialog.getByRole('link', { name: /^使用示例\s+OpenMem/ }),
-  ).toBeVisible();
 });
 
 test('article contents link to real heading anchors', async ({ page }) => {
@@ -333,7 +332,15 @@ test('feeds and metadata use the existing custom domain', async ({
   }
 });
 
-for (const route of ['/', '/projects/', '/blog/', '/about/', '/404.html']) {
+for (const route of [
+  '/',
+  '/projects/',
+  '/projects/openmem/',
+  '/blog/',
+  '/plates/',
+  '/about/',
+  '/404.html',
+]) {
   test(`${route} has accessible navigation, metadata and no horizontal overflow`, async ({
     page,
   }) => {

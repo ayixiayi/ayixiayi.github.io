@@ -53,3 +53,44 @@ test('special tags have distinct reachable pages and retain their labels', async
       .getByRole('link', { name: '测试' }),
   ).toHaveAttribute('href', `/blog/tags/${encodeURIComponent('测试')}/`);
 });
+
+test('RSS feed declares atom self link and article categories', async ({
+  request,
+}) => {
+  const response = await request.get('/rss.xml');
+  expect(response.ok()).toBe(true);
+  const xml = await response.text();
+  expect(xml).toContain('xmlns:atom="http://www.w3.org/2005/Atom"');
+  expect(xml).toContain(
+    '<atom:link href="https://www.ayixiayi.com/rss.xml" rel="self" type="application/rss+xml"',
+  );
+  expect(xml).toContain('<category>测试</category>');
+  expect(xml).toContain('<category>样例</category>');
+});
+
+test('search index strips Markdown syntax from article body text', async ({
+  request,
+}) => {
+  const response = await request.get('/search-index.json');
+  expect(response.ok()).toBe(true);
+  const entries: { kind: string; title: string; text: string }[] =
+    await response.json();
+  const published = entries.find(({ title }) => title === '测试样例：公开文章');
+  expect(published).toBeDefined();
+  expect(published!.text).toContain('工具与方法');
+  expect(published!.text).not.toContain('## ');
+});
+
+test('About first paragraph sits cleanly below the chapter banner', async ({
+  page,
+}) => {
+  await page.goto('/about/');
+  const band = await page.locator('.chapter-band').boundingBox();
+  const firstParagraph = await page
+    .locator('.about-page .prose p')
+    .first()
+    .boundingBox();
+  expect(band).not.toBeNull();
+  expect(firstParagraph).not.toBeNull();
+  expect(firstParagraph!.y).toBeGreaterThanOrEqual(band!.y + band!.height);
+});

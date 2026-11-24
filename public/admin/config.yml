@@ -22,7 +22,75 @@ collections:
       - { label: "标题", name: "title", widget: "string" }
       - { label: "描述", name: "description", widget: "text" }
       - { label: "发布日期", name: "pubDate", widget: "datetime", date_format: "YYYY-MM-DD", time_format: false, format: "YYYY-MM-DD", picker_utc: true }
+      - { label: "更新日期", name: "updatedDate", widget: "datetime", date_format: "YYYY-MM-DD", time_format: false, format: "YYYY-MM-DD", picker_utc: true, required: false }
       - { label: "网址", name: "slug", widget: "string", required: false, hint: "可选。文章的短网址，例如 tool-paradox 对应 /blog/tool-paradox/；只用小写字母、数字和连字符。留空则使用文件名。发布后不要再改，否则旧链接会失效。", pattern: ["^[a-z0-9]+(-[a-z0-9]+)*$", "只能包含小写字母、数字和连字符"] }
-      - { label: "标签", name: "tags", widget: "list", default: [], allow_add: true, hint: "每个标签单独一项，不需要加 #。" }
+      - { label: "标签", name: "tags", widget: "list", default: [], required: false, allow_add: true, hint: "每个标签单独一项，不需要加 #。" }
       - { label: "草稿", name: "draft", widget: "boolean", default: false, required: false }
+      - { label: "开启评论", name: "comments", widget: "boolean", default: true, required: false }
       - { label: "正文", name: "body", widget: "markdown" }
+
+  - name: "projects"
+    label: "项目案例"
+    folder: "src/content/projects"
+    create: true
+    slug: "{{slug}}"
+    editor:
+      preview: false
+    fields:
+      - { label: "项目名称", name: "title", widget: "string" }
+      - { label: "网址", name: "slug", widget: "string", required: false, pattern: ["^[a-z0-9]+(-[a-z0-9]+)*$", "只能包含小写字母、数字和连字符"] }
+      - { label: "副标题", name: "subtitle", widget: "string", required: false }
+      - { label: "摘要", name: "summary", widget: "text" }
+      - { label: "版画主题", name: "motif", widget: "select", options: ["memory", "orchestration", "music"], default: "memory" }
+      - { label: "状态", name: "status", widget: "select", options: [{ label: "进行中", value: "active" }, { label: "维护中", value: "maintained" }, { label: "已归档", value: "archived" }], default: "active" }
+      - { label: "时间段", name: "period", widget: "string", hint: "例如 2026 — 至今" }
+      - { label: "排序", name: "order", widget: "number", value_type: "int", min: 1, default: 1 }
+      - { label: "首页精选", name: "featured", widget: "boolean", default: true, required: false }
+      - { label: "里程碑日期（用于关于页年表）", name: "milestoneDate", widget: "datetime", date_format: "YYYY-MM-DD", time_format: false, format: "YYYY-MM-DD", picker_utc: true, required: false }
+      - { label: "代码仓库", name: "repo", widget: "string" }
+      - { label: "在线演示", name: "demo", widget: "string", required: false }
+      - { label: "标签", name: "tags", widget: "list", default: [], required: false, allow_add: true }
+      - { label: "技术栈", name: "stack", widget: "list", default: [], required: false, allow_add: true }
+      - { label: "致谢说明", name: "credits", widget: "string", required: false }
+      - { label: "要点列表", name: "highlights", widget: "list", default: [], required: false, allow_add: true }
+      - label: "参考源码链接"
+        name: "sources"
+        widget: "list"
+        required: false
+        fields:
+          - { label: "标题", name: "label", widget: "string" }
+          - { label: "链接", name: "url", widget: "string" }
+      - { label: "正文", name: "body", widget: "markdown", required: false }
+
+  - name: "site_data"
+    label: "站点数据"
+    editor:
+      preview: false
+    files:
+      - name: "now"
+        label: "首页近况（Now）"
+        file: "src/data/now.json"
+        fields:
+          - { label: "更新日期", name: "updated", widget: "datetime", date_format: "YYYY-MM-DD", time_format: false, format: "YYYY-MM-DD", picker_utc: true }
+          - label: "近况条目"
+            name: "items"
+            widget: "list"
+            fields:
+              - { label: "栏目标签", name: "label", widget: "string", hint: "例如 在做 / 在学 / 在读" }
+              - { label: "标题", name: "title", widget: "string" }
+              - { label: "补充说明", name: "detail", widget: "text", required: false }
+      - name: "plates"
+        label: "风景画册（Plates）"
+        file: "src/data/plates.json"
+        fields:
+          - label: "图录条目"
+            name: "plates"
+            widget: "list"
+            root: true
+            fields:
+              - { label: "罗马编号", name: "numeral", widget: "string" }
+              - { label: "种子编号", name: "seed", widget: "number", value_type: "int", min: 1, max: 999999 }
+              - { label: "标题", name: "title", widget: "string" }
+              - { label: "构图说明", name: "caption", widget: "text" }
+              - { label: "海报路径", name: "image", widget: "string", hint: "/images/plates/seed-<N>.webp" }
+              - { label: "设为默认构图", name: "isDefault", widget: "boolean", default: false, required: false }

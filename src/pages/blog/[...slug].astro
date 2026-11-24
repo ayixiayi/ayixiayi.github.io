@@ -7,10 +7,13 @@ import {
   formatDate,
   readingMinutes,
   cardUrl,
+  demoteHeadingsHtml,
 } from '../../lib/posts';
 import PostTags from '../../components/PostTags.astro';
 import Icon from '../../components/Icon.astro';
 import Chapter from '../../components/Chapter.astro';
+import ArticleColophon from '../../components/ArticleColophon.astro';
+import Comments from '../../components/Comments.astro';
 
 type ArticleLink = { title: string; url: string };
 
@@ -37,6 +40,14 @@ interface Props {
 }
 const { post, newer, older } = Astro.props;
 const { Content, headings } = await render(post);
+const hasTopH1 = headings.some((heading) => heading.depth === 1);
+const rawHtml = post.rendered?.html;
+const hasRelativeImages =
+  (post.rendered?.metadata?.imagePaths?.length ?? 0) > 0;
+const demotedHtml =
+  hasTopH1 && rawHtml && !hasRelativeImages
+    ? demoteHeadingsHtml(rawHtml)
+    : undefined;
 const contents = headings.filter((heading) => heading.depth <= 3);
 const topDepth = contents.reduce(
   (depth, heading) => Math.min(depth, heading.depth),
@@ -72,7 +83,11 @@ const topDepth = contents.reduce(
     <div class="container article-body">
       <div class="article-grid">
         <article class="prose">
-          <Content />
+          {demotedHtml !== undefined ? (
+            <Fragment set:html={demotedHtml} />
+          ) : (
+            <Content />
+          )}
         </article>
         {contents.length > 0 && (
           <aside class="toc">
@@ -112,6 +127,12 @@ const topDepth = contents.reduce(
           )}
         </nav>
       )}
+      <ArticleColophon
+        pubDate={post.data.pubDate}
+        updatedDate={post.data.updatedDate}
+        tags={post.data.tags}
+      />
+      <Comments slug={post.id} enabled={post.data.comments} />
       <div class="page-end">
         <a href="/blog/" class="text-link">
           <Icon name="back" size={17} />
@@ -127,14 +148,21 @@ const topDepth = contents.reduce(
 </BaseLayout>
 
 <script>
+  const decodeHashId = (hash: string) => {
+    const raw = hash.slice(1);
+    try {
+      return decodeURIComponent(raw);
+    } catch {
+      return raw;
+    }
+  };
+
   // Mark the section being read so the contents double as a quiet position marker.
   const links = [
     ...document.querySelectorAll<HTMLAnchorElement>('.toc nav a[href^="#"]'),
   ];
   const targets = links
-    .map((link) =>
-      document.getElementById(decodeURIComponent(link.hash.slice(1))),
-    )
+    .map((link) => document.getElementById(decodeHashId(link.hash)))
     .filter((target): target is HTMLElement => target !== null);
   if (targets.length && 'IntersectionObserver' in window) {
     const visible = new Set<Element>();
@@ -147,8 +175,7 @@ const topDepth = contents.reduce(
       for (const link of links)
         link.classList.toggle(
           'is-active',
-          current !== undefined &&
-            decodeURIComponent(link.hash.slice(1)) === current.id,
+          current !== undefined && decodeHashId(link.hash) === current.id,
         );
     };
     const observer = new IntersectionObserver(

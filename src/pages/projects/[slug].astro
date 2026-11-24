@@ -1,0 +1,435 @@
+---
+import { render } from 'astro:content';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Chapter from '../../components/Chapter.astro';
+import Icon from '../../components/Icon.astro';
+import ProjectMotif from '../../components/ProjectMotif.astro';
+import { demoteHeadingsHtml } from '../../lib/posts';
+import {
+  getProjects,
+  projectStatusLabels,
+  projectUrl,
+  type ProjectEntry,
+} from '../../lib/projects';
+
+type ProjectLink = { title: string; url: string };
+
+export async function getStaticPaths() {
+  const projects = await getProjects();
+  const links = projects.map((project) => ({
+    title: project.data.title,
+    url: projectUrl(project),
+  }));
+  return projects.map((project, index) => ({
+    params: { slug: project.id },
+    props: {
+      project,
+      prev: links[index - 1],
+      next: links[index + 1],
+    },
+  }));
+}
+
+interface Props {
+  project: ProjectEntry;
+  prev?: ProjectLink;
+  next?: ProjectLink;
+}
+
+const { project, prev, next } = Astro.props;
+const { data } = project;
+const { Content, headings } = await render(project);
+const hasBody = (project.body ?? '').trim().length > 0;
+const hasTopH1 = headings.some((heading) => heading.depth === 1);
+const rawHtml = project.rendered?.html;
+const hasRelativeImages =
+  (project.rendered?.metadata?.imagePaths?.length ?? 0) > 0;
+const demotedHtml =
+  hasTopH1 && rawHtml && !hasRelativeImages
+    ? demoteHeadingsHtml(rawHtml)
+    : undefined;
+const contents = headings.filter((heading) => heading.depth <= 3);
+const topDepth = contents.reduce(
+  (depth, heading) => Math.min(depth, heading.depth),
+  3,
+);
+const focusByMotif: Record<ProjectEntry['data']['motif'], string> = {
+  memory: '48% 38%',
+  orchestration: '26% 48%',
+  music: '68% 42%',
+};
+---
+
+<BaseLayout title={data.title} description={data.summary}>
+  <main id="main" class="case-page">
+    <Chapter short focus={focusByMotif[data.motif]}>
+      <div class="case-header">
+        <a href={`/projects/#${project.id}`} class="text-link back-link">
+          <Icon name="back" size={16} /> 返回项目
+        </a>
+        <div class="post-meta">
+          <span>{projectStatusLabels[data.status]}</span>
+          <span>{data.period}</span>
+        </div>
+        <h1>{data.title}</h1>
+        <p class="case-lede">{data.subtitle ?? data.summary}</p>
+      </div>
+    </Chapter>
+
+    <div class="container case-body">
+      <div class="case-grid">
+        <aside class="case-rail">
+          <dl class="case-facts">
+            <div>
+              <dt>状态</dt>
+              <dd>{projectStatusLabels[data.status]}</dd>
+            </div>
+            <div>
+              <dt>时间</dt>
+              <dd>{data.period}</dd>
+            </div>
+            {data.stack.length > 0 && (
+              <div>
+                <dt>技术栈</dt>
+                <dd class="case-stack">
+                  {data.stack.map((item) => (
+                    <span>{item}</span>
+                  ))}
+                </dd>
+              </div>
+            )}
+            <div>
+              <dt>仓库</dt>
+              <dd>
+                <a
+                  href={data.repo}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="case-fact-link"
+                >
+                  GitHub <Icon name="external" size={13} />
+                </a>
+              </dd>
+            </div>
+            {data.demo && (
+              <div>
+                <dt>演示</dt>
+                <dd>
+                  <a
+                    href={data.demo}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="case-fact-link"
+                  >
+                    在线预览 <Icon name="external" size={13} />
+                  </a>
+                </dd>
+              </div>
+            )}
+            {data.credits && (
+              <div>
+                <dt>致谢</dt>
+                <dd>{data.credits}</dd>
+              </div>
+            )}
+          </dl>
+
+          {contents.length >= 2 && (
+            <nav class="toc case-toc" aria-label="项目目录">
+              <p class="toc-title">目录</p>
+              <ol>
+                {contents.map((heading) => (
+                  <li class:list={{ nested: heading.depth > topDepth }}>
+                    <a href={`#${heading.slug}`}>{heading.text}</a>
+                  </li>
+                ))}
+              </ol>
+            </nav>
+          )}
+        </aside>
+
+        <div class="case-main">
+          <figure class:list={['case-plate', data.motif]} aria-hidden="true">
+            <ProjectMotif motif={data.motif} />
+          </figure>
+
+          {data.highlights.length > 0 && (
+            <ul class="case-highlights" aria-label="项目要点">
+              {data.highlights.map((item) => (
+                <li>{item}</li>
+              ))}
+            </ul>
+          )}
+
+          {hasBody ? (
+            <article class="prose">
+              {demotedHtml !== undefined ? (
+                <Fragment set:html={demotedHtml} />
+              ) : (
+                <Content />
+              )}
+            </article>
+          ) : (
+            <div class="case-fallback-cta">
+              <a
+                href={data.repo}
+                target="_blank"
+                rel="noopener noreferrer"
+                class="hero-primary"
+              >
+                在 GitHub 查看 <Icon name="external" size={15} />
+              </a>
+            </div>
+          )}
+
+          {data.sources.length > 0 && (
+            <footer class="case-sources">
+              {data.sources.map((source) => (
+                <a href={source.url} target="_blank" rel="noopener noreferrer">
+                  {source.label} <Icon name="external" size={13} />
+                </a>
+              ))}
+            </footer>
+          )}
+        </div>
+      </div>
+
+      {(prev || next) && (
+        <nav class="article-neighbors" aria-label="相邻项目">
+          {prev && (
+            <a href={prev.url}>
+              <span>
+                <Icon name="back" size={16} /> 上一个项目
+              </span>
+              <strong>{prev.title}</strong>
+            </a>
+          )}
+          {next && (
+            <a href={next.url}>
+              <span>
+                下一个项目 <Icon name="arrow" size={16} />
+              </span>
+              <strong>{next.title}</strong>
+            </a>
+          )}
+        </nav>
+      )}
+
+      <div class="page-end">
+        <a href="/projects/" class="text-link">
+          <Icon name="back" size={17} />
+          全部项目
+        </a>
+        <a
+          href={data.repo}
+          target="_blank"
+          rel="noopener noreferrer"
+          class="text-link"
+        >
+          GitHub 仓库 <Icon name="external" size={14} />
+        </a>
+      </div>
+    </div>
+  </main>
+</BaseLayout>
+
+<script>
+  const decodeHashId = (hash: string) => {
+    const raw = hash.slice(1);
+    try {
+      return decodeURIComponent(raw);
+    } catch {
+      return raw;
+    }
+  };
+
+  const links = [
+    ...document.querySelectorAll<HTMLAnchorElement>('.case-toc a[href^="#"]'),
+  ];
+  const targets = links
+    .map((link) => document.getElementById(decodeHashId(link.hash)))
+    .filter((target): target is HTMLElement => target !== null);
+  if (targets.length && 'IntersectionObserver' in window) {
+    const visible = new Set<Element>();
+    const update = () => {
+      const current =
+        targets.find((target) => visible.has(target)) ??
+        [...targets]
+          .reverse()
+          .find((target) => target.getBoundingClientRect().top < 0);
+      for (const link of links)
+        link.classList.toggle(
+          'is-active',
+          current !== undefined && decodeHashId(link.hash) === current.id,
+        );
+    };
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting) visible.add(entry.target);
+          else visible.delete(entry.target);
+        }
+        update();
+      },
+      { rootMargin: '0px 0px -55% 0px' },
+    );
+    targets.forEach((target) => observer.observe(target));
+  }
+</script>
+
+<style>
+  .case-header h1 {
+    margin: 12px 0 14px;
+    font: 400 clamp(48px, 6vw, 84px) / 1.05 var(--font-display);
+    letter-spacing: -0.02em;
+    color: var(--snow);
+  }
+  .case-lede {
+    max-width: 42em;
+    font-size: 16px;
+    line-height: 1.8;
+    color: var(--fog);
+  }
+  .case-body {
+    padding-bottom: 20px;
+  }
+  .case-grid {
+    display: grid;
+    grid-template-columns: var(--rail) minmax(0, 720px);
+    gap: var(--gap);
+    align-items: start;
+  }
+  .case-rail {
+    grid-column: 1;
+    position: sticky;
+    top: 110px;
+  }
+  .case-main {
+    grid-column: 2;
+    min-width: 0;
+  }
+  .case-facts {
+    margin: 0 0 28px;
+    padding-top: 16px;
+    border-top: 1px solid var(--rule);
+    display: grid;
+    gap: 14px;
+  }
+  .case-facts dt {
+    font: 11px var(--font-mono);
+    letter-spacing: 0.08em;
+    color: var(--mist);
+  }
+  .case-facts dd {
+    margin: 2px 0 0;
+    font-size: 13px;
+    line-height: 1.6;
+    color: var(--fog);
+  }
+  .case-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    font-family: var(--font-mono);
+    font-size: 12px;
+  }
+  .case-fact-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--gold);
+    transition: color var(--dur-1) ease;
+  }
+  .case-fact-link:hover {
+    color: var(--snow);
+  }
+  .case-toc {
+    position: static;
+    margin-top: 8px;
+    padding-top: 20px;
+    border-top: 1px solid var(--rule);
+  }
+  .case-plate {
+    margin: 0 0 36px;
+    --print: #15252a;
+    --ink-line: #93b0a8;
+  }
+  .case-plate.orchestration {
+    --print: #211f1a;
+    --ink-line: var(--gold);
+  }
+  .case-plate.music {
+    --print: #162130;
+    --ink-line: #97abc5;
+  }
+  .case-plate :global(.project-visual svg) {
+    height: clamp(150px, 18vw, 240px);
+  }
+  .case-highlights {
+    list-style: none;
+    margin: 0 0 36px;
+    padding: 0;
+    display: grid;
+    gap: 10px;
+  }
+  .case-highlights li {
+    position: relative;
+    padding-left: 22px;
+    font-size: 15px;
+    line-height: 1.75;
+    color: var(--fog);
+  }
+  .case-highlights li::before {
+    content: '—';
+    position: absolute;
+    left: 0;
+    color: var(--gold);
+  }
+  .case-fallback-cta {
+    margin-top: 24px;
+  }
+  .case-sources {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px 24px;
+    margin-top: 40px;
+    padding-top: 18px;
+    border-top: 1px solid var(--rule);
+    font-size: 14px;
+  }
+  .case-sources a {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--gold);
+    transition: color var(--dur-1) ease;
+  }
+  .case-sources a:hover {
+    color: var(--snow);
+  }
+  @media (max-width: 800px) {
+    .case-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 28px;
+    }
+    .case-rail {
+      position: static;
+      order: -1;
+      width: 100%;
+      padding: 18px 20px;
+      border-left: 1px solid var(--gold);
+      background: var(--ink-raised);
+    }
+    .case-facts {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      border-top: 0;
+      padding-top: 0;
+      margin-bottom: 0;
+    }
+    .case-toc {
+      margin-top: 16px;
+      padding-top: 16px;
+    }
+  }
+</style>

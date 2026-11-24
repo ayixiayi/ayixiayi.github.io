@@ -1,20 +1,52 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 import Chapter from '../components/Chapter.astro';
+import Chronology from '../components/Chronology.astro';
 import { DEFAULT_SEED } from '../art/landscape';
 import { site } from '../data/site';
+import { getPublishedPosts } from '../lib/posts';
+import { getProjects, getTimelineEntries } from '../lib/projects';
 
+const [posts, projects] = await Promise.all([
+  getPublishedPosts(),
+  getProjects(),
+]);
+const timeline = getTimelineEntries(posts, projects);
 const intro = `上海交通大学${site.grade.zh}自动化专业学生，兴趣导向型开发者。`;
 ---
 
 <BaseLayout title="关于" description={intro}>
   <main id="main" class="about-page">
-    <Chapter numeral="III" focus="70% 34%">
+    <Chapter numeral="IV" focus="70% 34%">
       <h1>关于</h1>
+      <p>{intro}</p>
     </Chapter>
     <div class="container about-grid">
+      <dl class="about-facts">
+        <div>
+          <dt>学校</dt>
+          <dd>上海交通大学 · 自动化</dd>
+        </div>
+        <div>
+          <dt>年级</dt>
+          <dd>
+            {site.grade.zh} · {site.grade.en}
+          </dd>
+        </div>
+        <div>
+          <dt>兴趣</dt>
+          <dd>AI Agent · 工具软件 · 创意编程</dd>
+        </div>
+        <div>
+          <dt>联系</dt>
+          <dd>
+            <a href={site.github} target="_blank" rel="noopener noreferrer">
+              GitHub
+            </a>
+          </dd>
+        </div>
+      </dl>
       <div class="prose" data-reveal>
-        <p>{intro}</p>
         <p>我对技术充满好奇，准确地说，我爱着作为工具，而不是学科的计算机。</p>
         <h2>关于本站</h2>
         <p>
@@ -28,24 +60,13 @@ const intro = `上海交通大学${site.grade.zh}自动化专业学生，兴趣�
           </a>
           构建，以 Markdown 写作，托管于 GitHub Pages。
         </p>
+        <!-- prettier-ignore -->
         <p>
-          首页风景的灵感来自 Theodor Kittelsen 的
-          <a
-            href="https://www.nasjonalmuseet.no/en/collection/object/NG.M.00546"
-            target="_blank"
-            rel="noopener noreferrer"
-            lang="en"
-          >
-            Far, far away Soria Moria Palace shimmered like Gold
-          </a>
-          。 层叠的山地、雾谷与远处的金色宫殿，是这幅生成图像的构图基础。
+          首页风景的灵感来自 Theodor Kittelsen 的 <a href="https://www.nasjonalmuseet.no/en/collection/object/NG.M.00546" target="_blank" rel="noopener noreferrer" lang="en">Far, far away Soria Moria Palace shimmered like Gold</a>。层叠的山地、雾谷与远处的金色宫殿，是这幅生成图像的构图基础。
         </p>
         <p>
-          图像由
-          <a href="https://p5js.org/" target="_blank" rel="noopener noreferrer">
-            p5.js
-          </a>
-          绘制，山体与笔触由噪声和随机种子控制。点击首页的「重新生成」可以更换风景；保留生成后的页面地址，可以再次打开同一构图。
+          图像直接由原生 Canvas 2D
+          与内置确定性噪声引擎绘制，山体与笔触由随机种子控制。点击首页的「重新生成」可以更换风景；保留生成后的页面地址，可以再次打开同一构图。
         </p>
         <h2>链接</h2>
         <ul>
@@ -77,9 +98,10 @@ const intro = `上海交通大学${site.grade.zh}自动化专业学生，兴趣�
         <div class="scroll-rod" aria-hidden="true"></div>
         <figcaption>
           <span>远方的宫殿</span>
-          p5.js · seed {DEFAULT_SEED}
+          Canvas 2D · seed {DEFAULT_SEED}
         </figcaption>
       </figure>
     </div>
+    <Chronology entries={timeline} />
   </main>
 </BaseLayout>

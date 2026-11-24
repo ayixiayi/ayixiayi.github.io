@@ -35,6 +35,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Install font subsetting tools
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends python3-fonttools python3-brotli
+
       - name: Check formatting
         run: npm run lint
 

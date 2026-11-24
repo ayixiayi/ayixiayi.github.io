@@ -108,10 +108,9 @@ test('a project title outranks body mentions and can be opened from the keyboard
     .getByRole('list', { name: '搜索结果' })
     .getByRole('link');
   await input.fill('ＯｐｅｎＭｅｍ');
-  await expect(results).toHaveCount(3);
+  await expect(results).toHaveCount(2);
   await expect(results.nth(0)).toContainText('项目');
-  await expect(results.nth(1)).toContainText('OpenMem 跨会话示例');
-  await expect(results.nth(2)).toContainText('近期文章');
+  await expect(results.nth(1)).toContainText('近期文章');
   await input.press('ArrowDown');
   await expect(results.nth(0)).toBeFocused();
   await page.keyboard.press('ArrowDown');
@@ -122,8 +121,8 @@ test('a project title outranks body mentions and can be opened from the keyboard
   await input.dispatchEvent('keydown', { key: 'Enter', isComposing: true });
   await expect(input).toBeFocused();
   await input.press('Enter');
-  await expect(page).toHaveURL('/projects/#openmem');
-  await expect(page.locator('#openmem')).toBeFocused();
+  await expect(page).toHaveURL('/projects/openmem/');
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('OpenMem');
 });
 
 test.describe('homepage without JavaScript', () => {
@@ -145,30 +144,77 @@ test.describe('homepage without JavaScript', () => {
   });
 });
 
-test('visitors can open the OpenMem example from either catalogue and from search', async ({
+test('visitors can open the OpenMem case study from either catalogue and from search', async ({
   page,
 }) => {
   for (const route of ['/', '/projects/']) {
     await page.goto(route);
-    await expect(
-      page.getByRole('link', { name: 'OpenMem 跨会话示例', exact: true }),
-    ).toHaveAttribute('href', '/projects/openmem/');
+    await expect(page.locator('#openmem .card-link')).toHaveAttribute(
+      'href',
+      '/projects/openmem/',
+    );
   }
   await page.getByRole('button', { name: '搜索站点' }).click();
   await page.getByRole('searchbox').fill('发布目录');
   await page
     .getByRole('dialog')
-    .getByRole('link', { name: /OpenMem 跨会话示例/ })
+    .getByRole('link', { name: /OpenMem/ })
     .click();
   await expect(page).toHaveURL('/projects/openmem/');
   await expect(
-    page.getByRole('heading', { name: 'OpenMem 跨会话示例' }),
+    page.getByRole('heading', { name: /OpenMem 跨会话示例/ }),
   ).toBeVisible();
   await page.locator('summary').click();
   await expect(page.locator('details pre')).toContainText(
     '"observation_type": "decision"',
   );
-  await expect(page.locator('pre[aria-label]')).toContainText(
+  await expect(page.locator('.prose')).toContainText(
     'pages · publish_dir: dist/',
   );
+});
+
+test('clicking a project card opens the case study while clicking GitHub opens the repository without interception', async ({
+  page,
+  context,
+}) => {
+  await context.route('https://github.com/**', (route) =>
+    route.fulfill({ status: 200, contentType: 'text/plain', body: 'ok' }),
+  );
+  await page.goto('/projects/');
+  const card = page.locator('#openmem');
+  const repoLink = card.locator('.repo-link');
+  await expect(repoLink).toBeVisible();
+  const [popup] = await Promise.all([
+    page.waitForEvent('popup'),
+    repoLink.click(),
+  ]);
+  expect(popup.url()).toBe('https://github.com/ayixiayi/OpenMem');
+  await popup.close();
+
+  const visual = card.locator('.project-visual');
+  await visual.scrollIntoViewIfNeeded();
+  const box = await visual.boundingBox();
+  expect(box).not.toBeNull();
+  await page.mouse.click(box!.x + box!.width / 2, box!.y + box!.height / 2);
+  await expect(page).toHaveURL('/projects/openmem/');
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('OpenMem');
+});
+
+test('the plates gallery renders 6 framed prints linking to seeded landscapes', async ({
+  page,
+}) => {
+  await page.goto('/plates/');
+  const cards = page.locator('.plate-card');
+  await expect(cards).toHaveCount(6);
+  await expect(cards.first().locator('a')).toHaveAttribute('href', '/');
+  await expect(cards.nth(1).locator('a')).toHaveAttribute(
+    'href',
+    '/?seed=1971',
+  );
+  await page.setViewportSize({ width: 320, height: 640 });
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= window.innerWidth,
+    ),
+  ).toBe(true);
 });

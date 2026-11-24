@@ -1,0 +1,45 @@
+[
+  {
+    "numeral": "I",
+    "seed": 1847,
+    "title": "远方的宫殿",
+    "caption": "默认构图。山谷偏右展开，低垂的逆光从谷口透出，金色宫殿稳坐在中景山脊上。",
+    "image": "/images/plates/seed-1847.webp",
+    "isDefault": true
+  },
+  {
+    "numeral": "II",
+    "seed": 1971,
+    "title": "深谷余晖",
+    "caption": "山谷更宽，远山雾带层叠展开，暖色光晕在冷青阴影之外聚成一道窄亮带。",
+    "image": "/images/plates/seed-1971.webp"
+  },
+  {
+    "numeral": "III",
+    "seed": 2020,
+    "title": "雾脊孤城",
+    "caption": "谷口向左移开，长缓山脊拉开纵深，宫殿剪影在铅灰雾幕中更显孤峭。",
+    "image": "/images/plates/seed-2020.webp"
+  },
+  {
+    "numeral": "IV",
+    "seed": 2718,
+    "title": "寒松远眺",
+    "caption": "近坡深色云杉群落更密，冷灰水纹沿谷底蜿蜒，将视线引向远处金顶。",
+    "image": "/images/plates/seed-2718.webp"
+  },
+  {
+    "numeral": "V",
+    "seed": 3141,
+    "title": "苍岚叠嶂",
+    "caption": "多道山脊起伏紧凑，迎光面断续掠过细碎边缘光，远景融进淡雾天色。",
+    "image": "/images/plates/seed-3141.webp"
+  },
+  {
+    "numeral": "VI",
+    "seed": 4219,
+    "title": "夜幕金塔",
+    "caption": "冷暗山体占据更大画幅，远方宫殿的暖色光晕成为整幅画唯一的视觉锚点。",
+    "image": "/images/plates/seed-4219.webp"
+  }
+]

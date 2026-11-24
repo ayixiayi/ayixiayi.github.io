@@ -1,8 +1,13 @@
-import { openMemExample, projects } from '../data/site';
-import { getPublishedPosts, postUrl } from '../lib/posts';
+import { getPublishedPosts, postUrl, stripMarkdown } from '../lib/posts';
+import { getPlates, getProjects, projectUrl } from '../lib/projects';
 
 export async function GET() {
-  const posts = await getPublishedPosts();
+  const [posts, projects] = await Promise.all([
+    getPublishedPosts(),
+    getProjects(),
+  ]);
+  const plates = getPlates();
+
   return Response.json([
     ...posts.map((post) => ({
       title: post.data.title,
@@ -14,22 +19,46 @@ export async function GET() {
         post.data.title,
         post.data.description,
         ...post.data.tags,
-        post.body,
+        stripMarkdown(post.body),
       ].join(' '),
     })),
     ...projects.map((project) => ({
-      title: project.title,
-      description: project.description,
-      url: `/projects/#${project.title.toLowerCase()}`,
+      title: project.data.title,
+      description: project.data.summary,
+      url: projectUrl(project),
       kind: '项目',
-      tags: project.tags,
-      text: [project.title, project.description, ...project.tags].join(' '),
+      tags: project.data.tags,
+      text: [
+        project.data.title,
+        project.data.subtitle ?? '',
+        project.data.summary,
+        ...project.data.tags,
+        ...project.data.stack,
+        ...project.data.highlights,
+        stripMarkdown(project.body),
+      ]
+        .filter(Boolean)
+        .join(' '),
     })),
     {
-      ...openMemExample,
-      kind: '使用示例',
-      tags: ['OpenMem', 'MCP', 'GitHub Pages'],
-      text: 'openmemory_store openmemory_wakeup dist/ dist-test/ SQLite 发布目录 跨会话 项目记忆',
+      title: '风景图录',
+      description:
+        '六幅精选程序生成山谷与远景宫殿构图，可按种子编号重新绘制或下载。',
+      url: '/plates/',
+      kind: '图录',
+      tags: ['生成艺术', '图录', 'Seed'],
+      text: [
+        '风景图录',
+        'Plates',
+        '生成艺术',
+        '程序风景',
+        '种子',
+        ...plates.flatMap((plate) => [
+          plate.title,
+          plate.caption,
+          `seed ${plate.seed}`,
+        ]),
+      ].join(' '),
     },
   ]);
 }

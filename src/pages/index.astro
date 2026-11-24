@@ -2,6 +2,7 @@
 import BaseLayout from '../layouts/BaseLayout.astro';
 import GenerativeLandscape from '../components/GenerativeLandscape.astro';
 import ProjectList from '../components/ProjectList.astro';
+import NowPlate from '../components/NowPlate.astro';
 import Icon from '../components/Icon.astro';
 import { site } from '../data/site';
 import {
@@ -10,9 +11,15 @@ import {
   formatDate,
   readingMinutes,
 } from '../lib/posts';
+import { getFeaturedProjects, getNowData } from '../lib/projects';
 
-const posts = (await getPublishedPosts()).slice(0, 3);
+const [allPosts, featuredProjects] = await Promise.all([
+  getPublishedPosts(),
+  getFeaturedProjects(),
+]);
+const posts = allPosts.slice(0, 3);
 const latest = posts[0];
+const now = getNowData();
 ---
 
 <BaseLayout title={site.name}>
@@ -69,7 +76,7 @@ const latest = posts[0];
             全部项目 <Icon name="arrow" size={16} />
           </a>
         </header>
-        <ProjectList home />
+        <ProjectList projects={featuredProjects} home />
       </section>
 
       <section class="plate" aria-labelledby="writing-title">
@@ -93,7 +100,12 @@ const latest = posts[0];
               <time datetime={post.data.pubDate.toISOString()}>
                 {formatDate(post.data.pubDate)}
               </time>
-              <h3>{post.data.title}</h3>
+              <div class="post-row-body">
+                <h3>{post.data.title}</h3>
+                {post.data.description && (
+                  <p class="post-row-desc">{post.data.description}</p>
+                )}
+              </div>
               <span class="reading-time">
                 约 {readingMinutes(post.body)} 分钟
               </span>
@@ -105,6 +117,8 @@ const latest = posts[0];
           {posts.length === 0 && <p class="muted">暂无文章。</p>}
         </div>
       </section>
+
+      <NowPlate now={now} />
     </div>
   </main>
 </BaseLayout>

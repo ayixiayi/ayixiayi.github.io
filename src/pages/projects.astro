@@ -2,6 +2,9 @@
 import BaseLayout from '../layouts/BaseLayout.astro';
 import Chapter from '../components/Chapter.astro';
 import ProjectList from '../components/ProjectList.astro';
+import { getProjects } from '../lib/projects';
+
+const projects = await getProjects();
 ---
 
 <BaseLayout title="项目" description="ayixiayi 的项目列表。">
@@ -11,7 +14,7 @@ import ProjectList from '../components/ProjectList.astro';
       <p>做过的和在做的东西。</p>
     </Chapter>
     <div class="container">
-      <ProjectList />
+      <ProjectList projects={projects} />
     </div>
   </main>
 </BaseLayout>

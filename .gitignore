@@ -5,6 +5,10 @@ dist-test/
 .astro/
 .astro-test/
 
+# build-generated CJK font subset
+src/assets/fonts/noto-serif-sc-subset.woff2
+src/assets/fonts/.noto-serif-sc-subset.sha256
+
 # dependencies
 node_modules/
 

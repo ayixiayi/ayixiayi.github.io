@@ -1,8 +1,6 @@
 ---
 import '@fontsource/instrument-serif/latin-400.css';
 import '@fontsource/instrument-serif/latin-400-italic.css';
-import '@fontsource/noto-serif-sc/400.css';
-import '@fontsource-variable/manrope';
 import '@fontsource/ibm-plex-mono/latin-400.css';
 import '../styles/global.css';
 // The wordmark and the home title are set in this face, so it is fetched
@@ -33,6 +31,7 @@ const {
 const path = Astro.url.pathname;
 const canonical = new URL(path, site.url);
 const fullTitle = title === site.name ? site.name : `${title} — ${site.name}`;
+const beijingYear = new Date(Date.now() + 8 * 60 * 60 * 1000).getUTCFullYear();
 ---
 
 <!doctype html>
@@ -76,6 +75,25 @@ const fullTitle = title === site.name ? site.name : `${title} — ${site.name}`;
     )}
     <meta name="twitter:card" content="summary_large_image" />
     <title>{fullTitle}</title>
+    <script is:inline type="speculationrules">
+      {
+        "prerender": [
+          {
+            "where": {
+              "and": [
+                { "href_matches": "/*" },
+                { "not": { "href_matches": "/admin/*" } },
+                { "not": { "href_matches": "/og/*" } },
+                { "not": { "href_matches": "/rss.xml" } },
+                { "not": { "href_matches": "/search-index.json" } },
+                { "not": { "selector_matches": "[download]" } }
+              ]
+            },
+            "eagerness": "moderate"
+          }
+        ]
+      }
+    </script>
     <script is:inline>
       document.documentElement.classList.add('js');
     </script>
@@ -109,7 +127,7 @@ const fullTitle = title === site.name ? site.name : `${title} — ${site.name}`;
     <footer class="site-footer">
       <div class="footer-mark" aria-hidden="true"></div>
       <div class="footer-row">
-        <p class="copyright">© {new Date().getFullYear()} ayixiayi</p>
+        <p class="copyright">© {beijingYear} ayixiayi</p>
         <div class="footer-links">
           <a href={site.github} target="_blank" rel="noopener noreferrer">
             GitHub <Icon name="external" size={14} />
@@ -129,34 +147,36 @@ const fullTitle = title === site.name ? site.name : `${title} — ${site.name}`;
           '.hero, .chapter-band, .not-found-art',
         );
         let frame = 0;
+        let limit = 8;
+        const measure = () => {
+          limit = stage
+            ? stage.offsetTop + stage.offsetHeight * 0.55 - header.offsetHeight
+            : 8;
+        };
         const update = () => {
           frame = 0;
-          // Use the unscrolled height: is-solid changes the rendered height
-          // and must not move its own activation threshold.
-          const headerHeight = parseFloat(
-            getComputedStyle(header).getPropertyValue('--header-height'),
-          );
-          const limit = stage
-            ? stage.offsetTop + stage.offsetHeight * 0.55 - headerHeight
-            : 8;
           header.classList.toggle('is-solid', scrollY > limit);
         };
         const scheduleUpdate = () => {
           if (!frame) frame = requestAnimationFrame(update);
         };
-        addEventListener('scroll', scheduleUpdate, { passive: true });
-        addEventListener('resize', scheduleUpdate);
+        const onResize = () => {
+          measure();
+          update();
+        };
+        measure();
         update();
+        addEventListener('scroll', scheduleUpdate, { passive: true });
+        addEventListener('resize', onResize, { passive: true });
 
-        // Content is revealed as it enters view; settled elements drop the mask
-        // so focus rings and glyph overhangs are never clipped.
+        // Content is revealed as it enters view; settled elements keep the
+        // class contract without forced style reads.
         const items = document.querySelectorAll('[data-reveal]');
         const settle = (item) => {
           item.classList.add('is-revealed');
-          const delay = parseFloat(
-            getComputedStyle(item).getPropertyValue('--reveal-delay') || '0',
-          );
-          setTimeout(() => item.classList.add('is-settled'), 1600 + delay);
+          const delay =
+            parseFloat(item.style.getPropertyValue('--reveal-delay')) || 0;
+          setTimeout(() => item.classList.add('is-settled'), 700 + delay);
         };
         if (
           !('IntersectionObserver' in window) ||

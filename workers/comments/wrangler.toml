@@ -1,0 +1,13 @@
+name = "mysite-comments"
+main = "src/index.ts"
+compatibility_date = "2026-01-01"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "mysite-comments"
+database_id = "17d3b8b9-1a88-4911-8f70-6a079264489a"
+
+[vars]
+ALLOWED_ORIGINS = "https://www.ayixiayi.com,https://ayixiayi.com,https://ayixiayi.github.io,http://127.0.0.1:4321,http://localhost:4321"
+MODERATION_MODE = "auto"
+TURNSTILE_SITE_KEY = ""

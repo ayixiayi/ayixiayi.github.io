@@ -14,12 +14,20 @@ import Icon from '../components/Icon.astro';
         decoding="async"
       />
     </div>
-    <div class="not-found-copy" data-reveal>
+    <div class="not-found-copy">
       <p class="not-found-code">404</p>
       <h1>页面不存在</h1>
-      <a href="/" class="text-link">
-        返回首页 <Icon name="arrow" size={16} />
-      </a>
+      <div class="not-found-actions">
+        <a href="/" class="hero-primary">
+          返回首页 <Icon name="arrow" size={16} />
+        </a>
+        <a href="/projects/" class="text-link">
+          项目
+        </a>
+        <a href="/blog/" class="text-link">
+          博客
+        </a>
+      </div>
     </div>
   </main>
 </BaseLayout>

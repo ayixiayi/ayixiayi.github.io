@@ -1,0 +1,147 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Chapter from '../components/Chapter.astro';
+import { getPlates } from '../lib/projects';
+
+const plates = getPlates();
+---
+
+<BaseLayout
+  title="画册"
+  description="六幅精选程序生成山谷与远景宫殿构图，可按种子编号重新绘制或下载。"
+>
+  <main id="main" class="plates-page">
+    <Chapter numeral="III" focus="50% 40%">
+      <h1>画册</h1>
+      <p>同一套算法，不同的种子。点开任意一幅，在首页继续「重新生成」。</p>
+    </Chapter>
+    <div class="container">
+      <ol class="plates-grid" aria-label="精选生成图录">
+        {plates.map((plate, index) => (
+          <li
+            class="plate-card"
+            data-reveal
+            style={`--reveal-delay: ${Math.min(index, 4) * 70}ms`}
+          >
+            <a href={plate.isDefault ? '/' : `/?seed=${plate.seed}`}>
+              <div class="plate-mat">
+                <div class="plate-window">
+                  <img
+                    src={plate.image}
+                    alt=""
+                    width="1200"
+                    height="750"
+                    fetchpriority={index === 0 ? 'high' : undefined}
+                    loading={index === 0 ? undefined : 'lazy'}
+                    decoding={index === 0 ? undefined : 'async'}
+                  />
+                </div>
+              </div>
+              <div class="plate-label">
+                <span class="plate-index">{plate.numeral}</span>
+                <span class="plate-title">{plate.title}</span>
+                <span class="plate-seed">seed {plate.seed}</span>
+                <span class="plate-caption">{plate.caption}</span>
+              </div>
+            </a>
+          </li>
+        ))}
+      </ol>
+    </div>
+  </main>
+</BaseLayout>
+
+<style>
+  .plates-grid {
+    list-style: none;
+    margin: 0;
+    padding: 0 0 clamp(80px, 9vw, 130px);
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: clamp(36px, 4vw, 60px) clamp(20px, 3vw, 44px);
+  }
+  .plate-card:first-child {
+    grid-column: span 2;
+    grid-row: span 2;
+  }
+  .plate-card a {
+    display: block;
+  }
+  .plate-mat {
+    padding: clamp(10px, 1.1vw, 16px);
+    background: var(--ink-soft);
+    border: 1px solid var(--rule);
+    box-shadow: 0 24px 50px -34px rgb(0 0 0 / 80%);
+    transition: border-color var(--dur-2) ease;
+  }
+  .plate-window {
+    overflow: hidden;
+    aspect-ratio: 8 / 5;
+    background: #26363a;
+  }
+  .plate-window img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: scale 900ms var(--ease-out);
+  }
+  .plate-card a:hover .plate-mat,
+  .plate-card a:focus-visible .plate-mat {
+    border-color: var(--gold-soft);
+  }
+  .plate-card a:hover img {
+    scale: 1.02;
+  }
+  .plate-label {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    gap: 2px 14px;
+    align-items: baseline;
+    padding-top: 14px;
+  }
+  .plate-index {
+    font: italic 400 22px / 1 var(--font-display);
+    color: var(--gold);
+  }
+  .plate-title {
+    font: 400 19px / 1.4 var(--font-display-cjk);
+    color: var(--snow);
+  }
+  .plate-card:first-child .plate-title {
+    font-size: 26px;
+  }
+  .plate-seed {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font: 12px var(--font-mono);
+    color: var(--fog);
+  }
+  .plate-seed::before {
+    content: '';
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: var(--gold);
+  }
+  .plate-caption {
+    grid-column: 2 / -1;
+    font-size: 13px;
+    line-height: 1.7;
+    color: var(--mist);
+  }
+  @media (max-width: 1080px) {
+    .plates-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    .plate-card:first-child {
+      grid-column: 1 / -1;
+      grid-row: auto;
+    }
+  }
+  @media (max-width: 640px) {
+    .plates-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>

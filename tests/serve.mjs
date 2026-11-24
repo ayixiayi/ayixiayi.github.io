@@ -1,6 +1,13 @@
 import { build, preview } from 'astro';
+import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import config from '../astro.config.mjs';
+
+execFileSync(
+  'python3',
+  [fileURLToPath(new URL('../scripts/subset-cjk-font.py', import.meta.url))],
+  { stdio: 'inherit' },
+);
 
 // The real pages and content schema read isolated Markdown fixtures via root.
 // Neither the CMS content directory nor the deployable dist/ is modified.
